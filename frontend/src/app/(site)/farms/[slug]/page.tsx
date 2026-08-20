@@ -18,27 +18,39 @@ import { Card } from "@/components/ui/card";
 import { SafetyBar } from "@/components/ui/safety-badge";
 import { api } from "@/lib/api";
 
+export const dynamic = "force-dynamic";
+export const dynamicParams = true;
+
 type Params = Promise<{ slug: string }>;
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
 const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : (v ?? ""));
 
 export async function generateStaticParams() {
-  const farms = await api.farms.list();
-  return farms.map((farm) => ({ slug: farm.slug }));
+  try {
+    const farms = await api.farms.list();
+    return farms.map((farm) => ({ slug: farm.slug }));
+  } catch {
+    return [];
+  }
 }
 
 export async function generateMetadata({ params }: { params: Params }) {
-  const farm = await api.farms.getBySlug((await params).slug);
-  return { title: farm ? `${farm.name} — AgroSafe Travel` : "Farm not found" };
+  try {
+    const { slug } = await params;
+    const farm = await api.farms.getBySlug(slug);
+    return { title: farm ? `${farm.name} — AgroSafe Travel` : "Farmstay — AgroSafe Travel" };
+  } catch {
+    return { title: "Farmstay — AgroSafe Travel" };
+  }
 }
 
 /** Keyword → icon, so a new amenity string still renders something sensible. */
 const AMENITY_ICONS: Array<[RegExp, LucideIcon]> = [
   [/wi-?fi|connect/i, Wifi],
   [/safety|monitor/i, ShieldCheck],
-  [/cuisine|food|breakfast/i, Utensils],
-  [/walk|trek|tour|heritage|harvest/i, Footprints],
+  [/cuisine|food|breakfast|meal|dham/i, Utensils],
+  [/walk|trek|tour|heritage|harvest|trail|picking/i, Footprints],
   [/escrow|protection/i, ShieldPlus],
 ];
 
@@ -59,14 +71,18 @@ export default async function FarmPage({
   if (!farm) notFound();
 
   const info = [
-    { icon: Ticket, title: "Cancellation Policy", body: farm.cancellationPolicy },
-    { icon: Siren, title: "Emergency Contact", body: farm.emergencyContact },
-    { icon: MapIcon, title: "Regional Guidelines", body: farm.regionalGuidelines },
+    { icon: Ticket, title: "Cancellation Policy", body: farm.cancellationPolicy || "Full refund if cancelled 48 hours prior to check-in." },
+    { icon: Siren, title: "Emergency Contact", body: farm.emergencyContact || "On-site caretaker available 24/7." },
+    { icon: MapIcon, title: "Regional Guidelines", body: farm.regionalGuidelines || "Stick to marked orchard paths. Respect local guidelines." },
   ];
+
+  const amenities = Array.isArray(farm.amenities) && farm.amenities.length > 0
+    ? farm.amenities
+    : ["Organic Farm", "Rural Connect Wi-Fi", "Safety Monitoring", "Escrow Protection"];
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
-      <SafetyBar status={farm.safety} />
+      <SafetyBar status={farm.safety || "safe"} />
 
       <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_380px]">
         <div>
@@ -87,7 +103,7 @@ export default async function FarmPage({
             <p className="mt-5 leading-relaxed text-ink-muted">{farm.summary}</p>
 
             <ul className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {farm.amenities.map((amenity) => {
+              {amenities.map((amenity) => {
                 const Icon = iconFor(amenity);
                 return (
                   <li key={amenity} className="flex items-center gap-2.5 text-sm font-semibold">

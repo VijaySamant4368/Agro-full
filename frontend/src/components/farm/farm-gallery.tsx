@@ -1,7 +1,27 @@
 import Image from "next/image";
 
-export function FarmGallery({ images, alt }: { images: string[]; alt: string }) {
-  const [hero, ...rest] = images;
+export function FarmGallery({ images = [], alt }: { images?: string[]; alt: string }) {
+  const safeImages = Array.isArray(images) && images.length > 0
+    ? images
+    : ["https://picsum.photos/seed/farm-default/900/600"];
+
+  const hero = safeImages[0];
+  const rest = safeImages.slice(1);
+
+  if (rest.length === 0) {
+    return (
+      <div className="relative aspect-16/9 overflow-hidden rounded-lg">
+        <Image
+          src={hero}
+          alt={alt}
+          fill
+          priority
+          sizes="(max-width: 768px) 100vw, 80vw"
+          className="object-cover"
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="grid gap-3 sm:grid-cols-3">
@@ -18,7 +38,7 @@ export function FarmGallery({ images, alt }: { images: string[]; alt: string }) 
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-1">
         {rest.map((src, i) => (
-          <div key={src} className="relative aspect-square overflow-hidden rounded-lg">
+          <div key={`${src}-${i}`} className="relative aspect-square overflow-hidden rounded-lg">
             <Image
               src={src}
               alt={`${alt} — view ${i + 2}`}
