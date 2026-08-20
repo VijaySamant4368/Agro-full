@@ -1,0 +1,30 @@
+import type { Metadata } from "next";
+import type { ReactNode } from "react";
+import { AuthProvider } from "@/lib/auth-context";
+import { AuthGuard } from "@/components/auth/auth-guard";
+import { ToastProvider } from "@/lib/toast-context";
+import "./globals.css";
+
+export const metadata: Metadata = {
+  title: "AgroSafe Travel — Explore Rural India, Safely",
+  description:
+    "Authenticated agrotourism experiences with real-time safety metrics and environmental landslide monitoring.",
+};
+
+/**
+ * Root shell only. Site chrome lives in the (site) and (auth) route groups so
+ * the auth screens can render their own header without fighting the main nav.
+ */
+export default function RootLayout({ children }: { children: ReactNode }) {
+  return (
+    <html lang="en">
+      <body className="flex min-h-screen flex-col">
+        <ToastProvider>
+          <AuthProvider>
+            <AuthGuard>{children}</AuthGuard>
+          </AuthProvider>
+        </ToastProvider>
+      </body>
+    </html>
+  );
+}

@@ -1,0 +1,35 @@
+import dotenv from "dotenv";
+import path from "path";
+
+// Load from current directory and parent directory if needed
+dotenv.config();
+dotenv.config({ path: path.resolve(process.cwd(), ".env.local"), override: true });
+dotenv.config({ path: path.resolve(process.cwd(), "../AgroWeb/.env.local") });
+dotenv.config({ path: path.resolve(process.cwd(), "../AgroWeb/.env") });
+
+export const ENV = {
+  PORT: process.env.PORT ? parseInt(process.env.PORT, 10) : 5000,
+  NODE_ENV: process.env.NODE_ENV || "development",
+  CLIENT_URL: process.env.CLIENT_URL || "http://localhost:3000",
+  DB_MODE: process.env.DB_MODE || "supabase",
+  SUPABASE_URL:
+    process.env.SUPABASE_URL ||
+    process.env.NEXT_PUBLIC_SUPABASE_URL ||
+    process.env.VITE_SUPABASE_URL ||
+    "https://placeholder-project.supabase.co",
+  SUPABASE_ANON_KEY:
+    process.env.SUPABASE_ANON_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
+    process.env.SUPABASE_PUBLISHABLE_KEY ||
+    process.env.SUPABASE_KEY ||
+    "placeholder-anon-key",
+  SUPABASE_SERVICE_ROLE_KEY:
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    process.env.SUPABASE_SERVICE_KEY ||
+    process.env.SUPABASE_SECRET_KEY ||
+    process.env.SUPABASE_SECRET ||
+    "placeholder-service-key",
+  JWT_SECRET: process.env.JWT_SECRET || "super-secret-jwt-key-agrosafe-2026",
+  JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || "7d",
+};

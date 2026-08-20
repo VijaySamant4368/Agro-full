@@ -1,0 +1,652 @@
+import type {
+  Booking,
+  Farm,
+  LandslideReport,
+  MonthlySafetyRecord,
+  NotificationLog,
+  PaymentEscrow,
+  StaticGeoReference,
+  Warning,
+} from "@/lib/types";
+
+const img = (seed: string, w = 900, h = 600) =>
+  `https://picsum.photos/seed/${seed}/${w}/${h}`;
+
+export const STATIC_GEO_REFS: StaticGeoReference[] = [
+  { state: "Uttarakhand", district: "Nainital", subDistrict: "Ramgarh", centerLatitude: 29.426, centerLongitude: 79.552 },
+  { state: "Uttarakhand", district: "Nainital", subDistrict: "Bhimtal", centerLatitude: 29.351, centerLongitude: 79.554 },
+  { state: "Uttarakhand", district: "Nainital", subDistrict: "Mukteshwar", centerLatitude: 29.472, centerLongitude: 79.647 },
+  { state: "Uttarakhand", district: "Chamoli", subDistrict: "Joshimath", centerLatitude: 30.556, centerLongitude: 79.563 },
+  { state: "Uttarakhand", district: "Chamoli", subDistrict: "Gopeshwar", centerLatitude: 30.418, centerLongitude: 79.333 },
+  { state: "Uttarakhand", district: "Chamoli", subDistrict: "Karnaprayag", centerLatitude: 30.261, centerLongitude: 79.219 },
+  { state: "Kerala", district: "Wayanad", subDistrict: "Meppadi", centerLatitude: 11.551, centerLongitude: 76.131 },
+  { state: "Kerala", district: "Wayanad", subDistrict: "Kalpetta", centerLatitude: 11.611, centerLongitude: 76.082 },
+  { state: "Kerala", district: "Wayanad", subDistrict: "Sultan Bathery", centerLatitude: 11.662, centerLongitude: 76.257 },
+  { state: "Kerala", district: "Idukki", subDistrict: "Munnar", centerLatitude: 10.088, centerLongitude: 77.059 },
+  { state: "Rajasthan", district: "Jaipur", subDistrict: "Amer", centerLatitude: 26.985, centerLongitude: 75.851 },
+  { state: "Arunachal Pradesh", district: "Lower Subansiri", subDistrict: "Ziro", centerLatitude: 27.564, centerLongitude: 93.834 },
+];
+
+export const getGeoCenter = (state: string, district: string, subDistrict?: string) => {
+  return (
+    STATIC_GEO_REFS.find(
+      (g) =>
+        g.state.toLowerCase() === state.toLowerCase() &&
+        g.district.toLowerCase() === district.toLowerCase() &&
+        (!subDistrict || g.subDistrict.toLowerCase() === subDistrict.toLowerCase()),
+    ) || { centerLatitude: 28.6139, centerLongitude: 77.209 }
+  );
+};
+
+export const FARMS: Farm[] = [
+  {
+    slug: "apple-blossom-retreat",
+    name: "Apple Blossom Retreat",
+    location: "Ramgarh, Uttarakhand",
+    state: "Uttarakhand",
+    district: "Nainital",
+    subDistrict: "Ramgarh",
+    category: "Organic Farm",
+    pricePerNight: 4500,
+    safety: "safe",
+    host: "Rohit Bisht",
+    hostId: "USR-HOST-101",
+    latitude: 29.426,
+    longitude: 79.552,
+    usesFallbackCoords: false,
+    summary:
+      "A working apple orchard on the Kumaon ridge. Guests join the morning harvest, learn grafting from the family that has farmed this slope for four generations, and sleep in a restored stone cottage facing the Nanda Devi range.",
+    images: [img("apple-orchard"), img("apple-detail", 600, 600), img("apple-room", 600, 600)],
+    amenities: [
+      "Organic Farm",
+      "Rural Connect Wi-Fi",
+      "Safety Monitoring",
+      "Local Cuisine",
+      "Guided Walks",
+      "Escrow Protection",
+    ],
+    cancellationPolicy:
+      "Full refund if cancelled 48 hours prior to check-in. Safety-related cancellations are always 100% refundable.",
+    emergencyContact:
+      "On-site caretaker available 24/7. Closest medical facility: 9km in Bhowali.",
+    regionalGuidelines:
+      "Stick to marked orchard paths. Do not feed the resident livestock. Respect the harvest schedule during October.",
+  },
+  {
+    slug: "spice-route-eco-stay",
+    name: "Spice Route Eco-Stay",
+    location: "Wayanad, Kerala",
+    state: "Kerala",
+    district: "Wayanad",
+    subDistrict: "Meppadi",
+    category: "Spice Garden",
+    pricePerNight: 3800,
+    safety: "moderate",
+    host: "Anna Mathew",
+    hostId: "USR-HOST-102",
+    latitude: 11.551,
+    longitude: 76.131,
+    usesFallbackCoords: false,
+    summary:
+      "Cardamom, pepper and vanilla grow together under the canopy here. The stay sits above the valley floor with a monsoon-season soil-stability sensor on the access road, reported live to the Safety Matrix.",
+    images: [img("spice-garden"), img("spice-detail", 600, 600), img("spice-room", 600, 600)],
+    amenities: [
+      "Spice Plantation Tour",
+      "Rural Connect Wi-Fi",
+      "Safety Monitoring",
+      "Local Cuisine",
+      "Guided Walks",
+      "Escrow Protection",
+    ],
+    cancellationPolicy:
+      "Full refund if cancelled 48 hours prior to check-in. Safety-related cancellations are always 100% refundable.",
+    emergencyContact:
+      "Host reachable 24/7. Closest medical facility: 6km in Meppadi Town.",
+    regionalGuidelines:
+      "Leeches are common during monsoon — wear covered footwear. The access road may close on red-alert days.",
+  },
+  {
+    slug: "amber-harvest-farm",
+    name: "Amber Harvest Farm",
+    location: "Amer, Rajasthan",
+    state: "Rajasthan",
+    district: "Jaipur",
+    subDistrict: "Amer",
+    category: "Floral Fields",
+    pricePerNight: 5200,
+    safety: "safe",
+    host: "Vikram Singh",
+    hostId: "USR-HOST-103",
+    latitude: 26.985,
+    longitude: 75.851,
+    usesFallbackCoords: false,
+    summary:
+      "Marigold and rose fields below the Amer ridge, harvested before sunrise for the Jaipur flower market. Guests ride out with the pickers and return for a millet breakfast cooked over a clay stove.",
+    images: [img("marigold-field"), img("marigold-detail", 600, 600), img("amber-room", 600, 600)],
+    amenities: [
+      "Sunrise Harvest",
+      "Rural Connect Wi-Fi",
+      "Safety Monitoring",
+      "Local Cuisine",
+      "Heritage Walks",
+      "Escrow Protection",
+    ],
+    cancellationPolicy:
+      "Full refund if cancelled 48 hours prior to check-in. Safety-related cancellations are always 100% refundable.",
+    emergencyContact:
+      "On-site manager available 24/7. Closest medical facility: 4km in Amer.",
+    regionalGuidelines:
+      "Summer field work stops by 10 AM — plan visits early. Carry water on all walks.",
+  },
+  {
+    slug: "mist-valley-paddy",
+    name: "Mist Valley Paddy",
+    location: "Ziro, Arunachal",
+    state: "Arunachal Pradesh",
+    district: "Lower Subansiri",
+    subDistrict: "Ziro",
+    category: "Paddy Fields",
+    pricePerNight: 4100,
+    safety: "safe",
+    host: "Tage Yampi",
+    hostId: "USR-HOST-104",
+    latitude: 27.564,
+    longitude: 93.834,
+    usesFallbackCoords: false,
+    summary:
+      "The Apatani valley's rice-and-fish terraces, farmed without a single plough. Stay in a bamboo longhouse and learn the irrigation system that has run on gravity alone for centuries.",
+    images: [img("paddy-terrace"), img("paddy-detail", 600, 600), img("paddy-room", 600, 600)],
+    amenities: [
+      "Terrace Farming",
+      "Rural Connect Wi-Fi",
+      "Safety Monitoring",
+      "Local Cuisine",
+      "Guided Walks",
+      "Escrow Protection",
+    ],
+    cancellationPolicy:
+      "Full refund if cancelled 48 hours prior to check-in. Safety-related cancellations are always 100% refundable.",
+    emergencyContact:
+      "Host reachable 24/7. Closest medical facility: 3km in Hapoli.",
+    regionalGuidelines:
+      "Inner Line Permit required for non-residents. Do not walk on terrace bunds during transplanting season.",
+  },
+  {
+    slug: "green-valley-retreat",
+    name: "Green Valley Retreat",
+    location: "Chamoli, Uttarakhand",
+    state: "Uttarakhand",
+    district: "Chamoli",
+    subDistrict: "Joshimath",
+    category: "Tea & Cardamom",
+    pricePerNight: 4500,
+    safety: "safe",
+    host: "John Doe",
+    hostId: "USR-HOST-105",
+    latitude: 30.556,
+    longitude: 79.563,
+    usesFallbackCoords: false,
+    summary:
+      "Experience the serenity of the Himalayas at Green Valley Retreat. Nestled within an active 50-acre cardamom and tea plantation, this retreat offers a unique blend of agricultural education and luxury living. Our farm utilizes real-time monitoring to ensure guest safety during monsoon seasons, providing peace of mind alongside breathtaking views.",
+    images: [img("green-valley"), img("tea-picking", 600, 600), img("valley-room", 600, 600)],
+    amenities: [
+      "Organic Farm",
+      "Rural Connect Wi-Fi",
+      "Safety Monitoring",
+      "Local Cuisine",
+      "Guided Walks",
+      "Escrow Protection",
+    ],
+    cancellationPolicy:
+      "Full refund if cancelled 48 hours prior to check-in. Safety-related cancellations are always 100% refundable.",
+    emergencyContact:
+      "On-site caretaker available 24/7. Closest medical facility: 12km in Chamoli Town Center.",
+    regionalGuidelines:
+      "Please stick to marked trails. Leeches may be present during monsoons. Respect local wildlife and farming schedules.",
+  },
+  {
+    slug: "sunrise-valley-organic-retreat",
+    name: "Sunrise Valley Organic Retreat",
+    location: "Wayanad, Kerala",
+    state: "Kerala",
+    district: "Wayanad",
+    subDistrict: "Kalpetta",
+    category: "Organic Farm",
+    pricePerNight: 3667,
+    safety: "safe",
+    host: "Meera Nair",
+    hostId: "USR-HOST-106",
+    latitude: 11.611,
+    longitude: 76.082,
+    usesFallbackCoords: false,
+    summary:
+      "Rows of turmeric and ginger run down to a stream that feeds the whole valley. The retreat runs entirely on solar and composts every kilogram of kitchen waste back into the beds guests eat from.",
+    images: [img("sunrise-valley"), img("turmeric-detail", 600, 600), img("sunrise-room", 600, 600)],
+    amenities: [
+      "Organic Farm",
+      "Rural Connect Wi-Fi",
+      "Safety Monitoring",
+      "Local Cuisine",
+      "Guided Walks",
+      "Escrow Protection",
+    ],
+    cancellationPolicy:
+      "Full refund if cancelled 48 hours prior to check-in. Safety-related cancellations are always 100% refundable.",
+    emergencyContact:
+      "Host reachable 24/7. Closest medical facility: 5km in Kalpetta.",
+    regionalGuidelines:
+      "Stream crossings flood quickly after rain. Follow the host's route advice during monsoon.",
+  },
+];
+
+export const getFarm = (slug: string) => FARMS.find((f) => f.slug === slug);
+
+export interface FarmQuery {
+  state?: string;
+  district?: string;
+  subDistrict?: string;
+}
+
+export function searchFarms({ state, district, subDistrict }: FarmQuery) {
+  return FARMS.filter(
+    (f) =>
+      (!state || f.state === state) &&
+      (!district || f.district === district) &&
+      (!subDistrict || f.subDistrict === subDistrict),
+  );
+}
+
+export const BOOKINGS: Booking[] = [
+  {
+    id: "AGS-48213",
+    farmSlug: "green-valley-retreat",
+    farmName: "Green Valley Retreat",
+    location: "Chamoli, Uttarakhand",
+    image: img("green-valley", 400, 300),
+    checkIn: "2026-09-15",
+    checkOut: "2026-09-18",
+    guests: 2,
+    total: 13950,
+    status: "upcoming",
+    escrowStatus: "Held_In_Escrow",
+    guestName: "Arjun Verma",
+    guestEmail: "arjun.verma@example.com",
+    guestPhone: "+91 98765 43210",
+  },
+  {
+    id: "AGS-47990",
+    farmSlug: "spice-route-eco-stay",
+    farmName: "Spice Route Eco-Stay",
+    location: "Wayanad, Kerala",
+    image: img("spice-garden", 400, 300),
+    checkIn: "2026-06-02",
+    checkOut: "2026-06-05",
+    guests: 4,
+    total: 11850,
+    status: "completed",
+    escrowStatus: "Released_To_Host",
+    guestName: "Pooja Sharma",
+    guestEmail: "pooja.s@example.com",
+    guestPhone: "+91 91234 56789",
+  },
+  {
+    id: "AGS-47612",
+    farmSlug: "amber-harvest-farm",
+    farmName: "Amber Harvest Farm",
+    location: "Amer, Rajasthan",
+    image: img("marigold-field", 400, 300),
+    checkIn: "2026-03-11",
+    checkOut: "2026-03-13",
+    guests: 2,
+    total: 10850,
+    status: "cancelled",
+    escrowStatus: "Refunded_To_Guest",
+    guestName: "Siddharth Rao",
+    guestEmail: "siddharth.rao@example.com",
+    guestPhone: "+91 94567 89012",
+  },
+];
+
+export const LIVE_REPORTS: LandslideReport[] = [
+  {
+    id: "WG-LS-0098",
+    location: "Bamnoli Hill Road, Satara",
+    lat: 17.49,
+    lng: 73.15,
+    severity: "Critical",
+    reportedAt: "2026-08-08 10:30",
+    status: "Immediate action required",
+    cnnConfidenceScore: 0.94,
+    uploadedBy: "Rohan Patil",
+  },
+  {
+    id: "UK-LS-0451",
+    location: "NH-7 near Joshimath, Chamoli",
+    lat: 30.55,
+    lng: 79.56,
+    severity: "High",
+    reportedAt: "2026-08-07 18:05",
+    status: "Road partially blocked",
+    cnnConfidenceScore: 0.88,
+    uploadedBy: "Suresh Rawat",
+  },
+  {
+    id: "KL-LS-0212",
+    location: "Meppadi Ghat, Wayanad",
+    lat: 11.55,
+    lng: 76.13,
+    severity: "Medium",
+    reportedAt: "2026-08-06 07:42",
+    status: "Under observation",
+    cnnConfidenceScore: 0.76,
+    uploadedBy: "Anna Mathew",
+  },
+  {
+    id: "HP-LS-0077",
+    location: "Kinnaur Valley Approach Road",
+    lat: 31.58,
+    lng: 78.27,
+    severity: "Low",
+    reportedAt: "2026-08-04 14:20",
+    status: "Cleared, monitoring continues",
+    cnnConfidenceScore: 0.65,
+    uploadedBy: "Deepak Negi",
+  },
+];
+
+export const WARNINGS: Warning[] = [
+  {
+    id: "WRN-2026-UK09",
+    warningSource: "Automated_CNN",
+    reportId: "UK-LS-0451",
+    farmSlug: "green-valley-retreat",
+    farmName: "Green Valley Retreat",
+    epicenterLat: 30.55,
+    epicenterLng: 79.56,
+    impactRadiusKm: 15,
+    issuedAt: "2026-08-07 18:10",
+    expiresAt: "2026-08-14 18:10",
+    status: "Active",
+    severity: "High",
+    title: "NH-7 Joshimath Sector Debris Flow",
+    description: "Automated CNN classified mudslide debris across Chamoli valley approach. Precautionary travel advisory dispatched to upcoming stays.",
+    affectedFarmsCount: 2,
+    affectedBookingsCount: 3,
+  },
+  {
+    id: "WRN-2026-KL04",
+    warningSource: "Manual_Host",
+    hostId: "USR-HOST-102",
+    farmSlug: "spice-route-eco-stay",
+    farmName: "Spice Route Eco-Stay",
+    epicenterLat: 11.551,
+    epicenterLng: 76.131,
+    impactRadiusKm: 8,
+    issuedAt: "2026-08-06 08:00",
+    expiresAt: "2026-08-10 08:00",
+    status: "Active",
+    severity: "Medium",
+    title: "Heavy Monsoon Incline Saturation Advisory",
+    description: "Host manual warning issued for Meppadi tea slopes due to 48-hour continuous downpour. Escrow 100% refund safeguard activated.",
+    affectedFarmsCount: 1,
+    affectedBookingsCount: 2,
+  },
+  {
+    id: "WRN-2026-WG01",
+    warningSource: "Automated_CNN",
+    reportId: "WG-LS-0098",
+    epicenterLat: 17.49,
+    epicenterLng: 73.15,
+    impactRadiusKm: 25,
+    issuedAt: "2026-08-08 10:35",
+    expiresAt: "2026-08-15 10:35",
+    status: "Active",
+    severity: "Critical",
+    title: "Bamnoli Ghat Primary Ridge Collapse",
+    description: "Severe road severance detected by automated satellite & ground drone inference. Immediate route diversion enforced.",
+    affectedFarmsCount: 3,
+    affectedBookingsCount: 5,
+  },
+  {
+    id: "WRN-2026-HP02",
+    warningSource: "Automated_CNN",
+    reportId: "HP-LS-0077",
+    epicenterLat: 31.58,
+    epicenterLng: 78.27,
+    impactRadiusKm: 10,
+    issuedAt: "2026-08-04 14:25",
+    expiresAt: "2026-08-06 14:25",
+    status: "Expired",
+    severity: "Low",
+    title: "Minor Rockfall near Kinnaur Gateway",
+    description: "Debris cleared by BRO highway teams. Area normalized and reopened for farmstay traffic.",
+    affectedFarmsCount: 1,
+    affectedBookingsCount: 1,
+  },
+];
+
+export const PAYMENT_ESCROWS: PaymentEscrow[] = [
+  {
+    paymentId: "PAY-88213",
+    bookingId: "AGS-48213",
+    farmName: "Green Valley Retreat",
+    farmSlug: "green-valley-retreat",
+    guestName: "Arjun Verma",
+    stayAmount: 13500,
+    platformFee: 450,
+    totalCharged: 13950,
+    escrowStatus: "Held_In_Escrow",
+    gatewayRef: "rzp_live_984128941",
+    stayStartDate: "2026-09-15",
+    stayEndDate: "2026-09-18",
+    transactions: [
+      {
+        id: "TXN-00192",
+        paymentId: "PAY-88213",
+        transactionType: "Charge",
+        amount: 13950,
+        gatewayRef: "rzp_live_984128941",
+        processedAt: "2026-08-02 14:22",
+        note: "Initial booking charge authorized & funds locked in AgroSafe Escrow Vault.",
+      },
+    ],
+    statusHistory: [
+      {
+        id: "LOG-101",
+        previousStatus: "Pending",
+        newStatus: "Confirmed",
+        reason: "Escrow funds successfully captured from card ending in 4242",
+        changedAt: "2026-08-02 14:22",
+      },
+    ],
+  },
+  {
+    paymentId: "PAY-87990",
+    bookingId: "AGS-47990",
+    farmName: "Spice Route Eco-Stay",
+    farmSlug: "spice-route-eco-stay",
+    guestName: "Pooja Sharma",
+    stayAmount: 11400,
+    platformFee: 450,
+    totalCharged: 11850,
+    escrowStatus: "Released_To_Host",
+    gatewayRef: "rzp_live_871239011",
+    stayStartDate: "2026-06-02",
+    stayEndDate: "2026-06-05",
+    transactions: [
+      {
+        id: "TXN-00142",
+        paymentId: "PAY-87990",
+        transactionType: "Charge",
+        amount: 11850,
+        gatewayRef: "rzp_live_871239011",
+        processedAt: "2026-05-18 11:15",
+        note: "Pre-stay booking hold in escrow.",
+      },
+      {
+        id: "TXN-00155",
+        paymentId: "PAY-87990",
+        transactionType: "Payout",
+        amount: 11400,
+        gatewayRef: "payout_bank_991823",
+        processedAt: "2026-06-06 09:30",
+        note: "Stay successfully completed. Host escrow payout disbursed to Anna Mathew.",
+      },
+    ],
+    statusHistory: [
+      {
+        id: "LOG-088",
+        previousStatus: "Confirmed",
+        newStatus: "Active",
+        reason: "Guest checked in on-site",
+        changedAt: "2026-06-02 12:00",
+      },
+      {
+        id: "LOG-089",
+        previousStatus: "Active",
+        newStatus: "Completed",
+        reason: "Guest checkout completed with 5-star host feedback",
+        changedAt: "2026-06-05 11:00",
+      },
+    ],
+  },
+  {
+    paymentId: "PAY-87612",
+    bookingId: "AGS-47612",
+    farmName: "Amber Harvest Farm",
+    farmSlug: "amber-harvest-farm",
+    guestName: "Siddharth Rao",
+    stayAmount: 10400,
+    platformFee: 450,
+    totalCharged: 10850,
+    escrowStatus: "Refunded_To_Guest",
+    gatewayRef: "rzp_live_761298412",
+    stayStartDate: "2026-03-11",
+    stayEndDate: "2026-03-13",
+    transactions: [
+      {
+        id: "TXN-00101",
+        paymentId: "PAY-87612",
+        transactionType: "Charge",
+        amount: 10850,
+        gatewayRef: "rzp_live_761298412",
+        processedAt: "2026-02-28 16:40",
+        note: "Pre-stay escrow booking hold.",
+      },
+      {
+        id: "TXN-00109",
+        paymentId: "PAY-87612",
+        transactionType: "Refund",
+        amount: 10850,
+        gatewayRef: "rfnd_rzp_761298412_01",
+        processedAt: "2026-03-02 10:15",
+        note: "100% Emergency Escrow Refund triggered via Landslide Warning Protocol.",
+      },
+    ],
+    statusHistory: [
+      {
+        id: "LOG-062",
+        previousStatus: "Confirmed",
+        newStatus: "Cancelled",
+        reason: "Safety Warning triggered in district — automatic 100% guest refund processed",
+        changedAt: "2026-03-02 10:15",
+      },
+    ],
+  },
+];
+
+export const MONTHLY_MATRIX: MonthlySafetyRecord[] = [
+  // Nainital
+  { month: 1, monthName: "January", year: 2026, district: "Nainital", state: "Uttarakhand", safetyRating: "Safe", rainfallMm: 35, soilStabilityIndex: 92, historicalLandslidesCount: 0 },
+  { month: 2, monthName: "February", year: 2026, district: "Nainital", state: "Uttarakhand", safetyRating: "Safe", rainfallMm: 45, soilStabilityIndex: 90, historicalLandslidesCount: 0 },
+  { month: 3, monthName: "March", year: 2026, district: "Nainital", state: "Uttarakhand", safetyRating: "Safe", rainfallMm: 28, soilStabilityIndex: 94, historicalLandslidesCount: 0 },
+  { month: 4, monthName: "April", year: 2026, district: "Nainital", state: "Uttarakhand", safetyRating: "Safe", rainfallMm: 22, soilStabilityIndex: 95, historicalLandslidesCount: 0 },
+  { month: 5, monthName: "May", year: 2026, district: "Nainital", state: "Uttarakhand", safetyRating: "Safe", rainfallMm: 60, soilStabilityIndex: 88, historicalLandslidesCount: 1 },
+  { month: 6, monthName: "June", year: 2026, district: "Nainital", state: "Uttarakhand", safetyRating: "Moderate", rainfallMm: 190, soilStabilityIndex: 72, historicalLandslidesCount: 3 },
+  { month: 7, monthName: "July", year: 2026, district: "Nainital", state: "Uttarakhand", safetyRating: "High Risk", rainfallMm: 380, soilStabilityIndex: 45, historicalLandslidesCount: 9 },
+  { month: 8, monthName: "August", year: 2026, district: "Nainital", state: "Uttarakhand", safetyRating: "High Risk", rainfallMm: 410, soilStabilityIndex: 40, historicalLandslidesCount: 12 },
+  { month: 9, monthName: "September", year: 2026, district: "Nainital", state: "Uttarakhand", safetyRating: "Moderate", rainfallMm: 160, soilStabilityIndex: 70, historicalLandslidesCount: 4 },
+  { month: 10, monthName: "October", year: 2026, district: "Nainital", state: "Uttarakhand", safetyRating: "Safe", rainfallMm: 25, soilStabilityIndex: 91, historicalLandslidesCount: 0 },
+  { month: 11, monthName: "November", year: 2026, district: "Nainital", state: "Uttarakhand", safetyRating: "Safe", rainfallMm: 12, soilStabilityIndex: 96, historicalLandslidesCount: 0 },
+  { month: 12, monthName: "December", year: 2026, district: "Nainital", state: "Uttarakhand", safetyRating: "Safe", rainfallMm: 18, soilStabilityIndex: 95, historicalLandslidesCount: 0 },
+
+  // Chamoli
+  { month: 1, monthName: "January", year: 2026, district: "Chamoli", state: "Uttarakhand", safetyRating: "Safe", rainfallMm: 40, soilStabilityIndex: 89, historicalLandslidesCount: 0 },
+  { month: 2, monthName: "February", year: 2026, district: "Chamoli", state: "Uttarakhand", safetyRating: "Safe", rainfallMm: 50, soilStabilityIndex: 87, historicalLandslidesCount: 0 },
+  { month: 3, monthName: "March", year: 2026, district: "Chamoli", state: "Uttarakhand", safetyRating: "Safe", rainfallMm: 35, soilStabilityIndex: 91, historicalLandslidesCount: 0 },
+  { month: 4, monthName: "April", year: 2026, district: "Chamoli", state: "Uttarakhand", safetyRating: "Safe", rainfallMm: 30, soilStabilityIndex: 93, historicalLandslidesCount: 0 },
+  { month: 5, monthName: "May", year: 2026, district: "Chamoli", state: "Uttarakhand", safetyRating: "Moderate", rainfallMm: 75, soilStabilityIndex: 78, historicalLandslidesCount: 2 },
+  { month: 6, monthName: "June", year: 2026, district: "Chamoli", state: "Uttarakhand", safetyRating: "Moderate", rainfallMm: 220, soilStabilityIndex: 68, historicalLandslidesCount: 5 },
+  { month: 7, monthName: "July", year: 2026, district: "Chamoli", state: "Uttarakhand", safetyRating: "High Risk", rainfallMm: 460, soilStabilityIndex: 38, historicalLandslidesCount: 16 },
+  { month: 8, monthName: "August", year: 2026, district: "Chamoli", state: "Uttarakhand", safetyRating: "High Risk", rainfallMm: 490, soilStabilityIndex: 34, historicalLandslidesCount: 18, activeOverrideAlert: true },
+  { month: 9, monthName: "September", year: 2026, district: "Chamoli", state: "Uttarakhand", safetyRating: "Moderate", rainfallMm: 180, soilStabilityIndex: 66, historicalLandslidesCount: 6 },
+  { month: 10, monthName: "October", year: 2026, district: "Chamoli", state: "Uttarakhand", safetyRating: "Safe", rainfallMm: 30, soilStabilityIndex: 90, historicalLandslidesCount: 1 },
+  { month: 11, monthName: "November", year: 2026, district: "Chamoli", state: "Uttarakhand", safetyRating: "Safe", rainfallMm: 15, soilStabilityIndex: 95, historicalLandslidesCount: 0 },
+  { month: 12, monthName: "December", year: 2026, district: "Chamoli", state: "Uttarakhand", safetyRating: "Safe", rainfallMm: 20, soilStabilityIndex: 94, historicalLandslidesCount: 0 },
+
+  // Wayanad
+  { month: 1, monthName: "January", year: 2026, district: "Wayanad", state: "Kerala", safetyRating: "Safe", rainfallMm: 15, soilStabilityIndex: 96, historicalLandslidesCount: 0 },
+  { month: 2, monthName: "February", year: 2026, district: "Wayanad", state: "Kerala", safetyRating: "Safe", rainfallMm: 20, soilStabilityIndex: 95, historicalLandslidesCount: 0 },
+  { month: 3, monthName: "March", year: 2026, district: "Wayanad", state: "Kerala", safetyRating: "Safe", rainfallMm: 40, soilStabilityIndex: 92, historicalLandslidesCount: 0 },
+  { month: 4, monthName: "April", year: 2026, district: "Wayanad", state: "Kerala", safetyRating: "Safe", rainfallMm: 95, soilStabilityIndex: 86, historicalLandslidesCount: 1 },
+  { month: 5, monthName: "May", year: 2026, district: "Wayanad", state: "Kerala", safetyRating: "Moderate", rainfallMm: 220, soilStabilityIndex: 74, historicalLandslidesCount: 3 },
+  { month: 6, monthName: "June", year: 2026, district: "Wayanad", state: "Kerala", safetyRating: "High Risk", rainfallMm: 680, soilStabilityIndex: 42, historicalLandslidesCount: 14 },
+  { month: 7, monthName: "July", year: 2026, district: "Wayanad", state: "Kerala", safetyRating: "High Risk", rainfallMm: 820, soilStabilityIndex: 32, historicalLandslidesCount: 22 },
+  { month: 8, monthName: "August", year: 2026, district: "Wayanad", state: "Kerala", safetyRating: "High Risk", rainfallMm: 710, soilStabilityIndex: 36, historicalLandslidesCount: 19, activeOverrideAlert: true },
+  { month: 9, monthName: "September", year: 2026, district: "Wayanad", state: "Kerala", safetyRating: "Moderate", rainfallMm: 260, soilStabilityIndex: 69, historicalLandslidesCount: 4 },
+  { month: 10, monthName: "October", year: 2026, district: "Wayanad", state: "Kerala", safetyRating: "Moderate", rainfallMm: 210, soilStabilityIndex: 76, historicalLandslidesCount: 2 },
+  { month: 11, monthName: "November", year: 2026, district: "Wayanad", state: "Kerala", safetyRating: "Safe", rainfallMm: 70, soilStabilityIndex: 89, historicalLandslidesCount: 0 },
+  { month: 12, monthName: "December", year: 2026, district: "Wayanad", state: "Kerala", safetyRating: "Safe", rainfallMm: 25, soilStabilityIndex: 94, historicalLandslidesCount: 0 },
+];
+
+export const NOTIFICATIONS: NotificationLog[] = [
+  {
+    id: "NOTIF-091",
+    userId: "USR-GST-001",
+    userRole: "guest",
+    warningId: "WRN-2026-UK09",
+    relatedBookingId: "AGS-48213",
+    notificationType: "Push",
+    title: "⚠️ High Priority: Hazard Alert in Chamoli Zone",
+    messageContent: "A verified mudslide debris flow was reported 12km from Green Valley Retreat. Your booking ref AGS-48213 is protected by 100% Escrow Refund Guarantee.",
+    isRead: false,
+    dispatchedAt: "2026-08-07 18:12",
+    severity: "warning",
+  },
+  {
+    id: "NOTIF-084",
+    userId: "USR-HOST-102",
+    userRole: "host",
+    warningId: "WRN-2026-KL04",
+    relatedBookingId: "AGS-47990",
+    notificationType: "SMS",
+    title: "Manual Warning Broadcast Confirmed",
+    messageContent: "Your manual safety alert for Meppadi tea slopes was broadcast to 4 active travellers within the 8km radius.",
+    isRead: true,
+    dispatchedAt: "2026-08-06 08:05",
+    severity: "info",
+  },
+  {
+    id: "NOTIF-077",
+    userId: "USR-GST-002",
+    userRole: "guest",
+    relatedBookingId: "AGS-47612",
+    notificationType: "Email",
+    title: "100% Escrow Refund Disbursed",
+    messageContent: "Due to disaster safety protocols, full payment of ₹10,850 for booking AGS-47612 has been refunded back to your original source account.",
+    isRead: true,
+    dispatchedAt: "2026-03-02 10:20",
+    severity: "info",
+  },
+  {
+    id: "NOTIF-065",
+    userId: "USR-HOST-101",
+    userRole: "host",
+    notificationType: "Push",
+    title: "Escrow Payout Credited: ₹11,400",
+    messageContent: "Pooja Sharma's checkout at Spice Route Eco-Stay was completed. Funds released from AgroSafe Escrow Vault to your bank account.",
+    isRead: true,
+    dispatchedAt: "2026-06-06 09:35",
+    severity: "info",
+  },
+];

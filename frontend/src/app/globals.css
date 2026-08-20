@@ -1,0 +1,51 @@
+@import "tailwindcss";
+
+@theme {
+  /* Brand — deep forest green from the mockups */
+  --color-brand-50: #f0f7f2;
+  --color-brand-100: #dcefe1;
+  --color-brand-200: #bcdfc7;
+  --color-brand-500: #16a34a;
+  --color-brand-600: #15803d;
+  --color-brand-700: #166534;
+  --color-brand-800: #14532d;
+  --color-brand-900: #0f3d21;
+
+  /* Surfaces */
+  --color-canvas: #f7f7f5;
+  --color-surface: #ffffff;
+  --color-line: #e4e4e1;
+
+  /* Text */
+  --color-ink: #171717;
+  --color-ink-muted: #525252;
+  --color-ink-subtle: #737373;
+
+  /* Status */
+  --color-safe: #16a34a;
+  --color-warn: #f59e0b;
+  --color-danger: #dc2626;
+
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Shared focus ring so every interactive element is keyboard-visible. */
+@layer base {
+  :where(a, button, input, select, textarea, [tabindex]):focus-visible {
+    outline: 2px solid var(--color-brand-600);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+}
