@@ -20,10 +20,7 @@ const allowedOrigins = [
 
 const corsOptions: cors.CorsOptions = {
   origin: (origin, callback) => {
-    // Allow non-browser tools, curl, mobile, or same-origin
     if (!origin) return callback(null, true);
-    
-    // Check if origin matches allowed list or regex (any localhost / 127.0.0.1 port)
     if (
       allowedOrigins.includes(origin) ||
       /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin) ||
@@ -31,7 +28,7 @@ const corsOptions: cors.CorsOptions = {
     ) {
       return callback(null, true);
     }
-    return callback(null, true); // Permissive in dev/testing
+    return callback(null, true); // Permissive in testing
   },
   credentials: true,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
@@ -63,19 +60,31 @@ app.get("/health", (req, res) => {
   });
 });
 
-// API Routes
+app.get("/api/health", (req, res) => {
+  res.status(200).json({
+    status: "healthy",
+    timestamp: new Date().toISOString(),
+    supabaseConnected: isLiveSupabaseConfigured(),
+    environment: ENV.NODE_ENV,
+  });
+});
+
+// Mount API Routes on both /api and root to handle any serverless rewrite
 app.use("/api", apiRouter);
+app.use("/", apiRouter);
 
 // Global Error Handler
 app.use(errorHandler);
 
-// Start server
-app.listen(ENV.PORT, () => {
-  console.log(`====================================================`);
-  console.log(`🚀 AgroSafe Backend Server running on port ${ENV.PORT}`);
-  console.log(`🌐 Supabase DB Integration: ${isLiveSupabaseConfigured() ? "Connected (Live)" : "Local Mock Storage (Waiting for .env credentials)"}`);
-  console.log(`📡 Base API URL: http://localhost:${ENV.PORT}/api`);
-  console.log(`====================================================`);
-});
+// Start server only when not running inside Vercel serverless environment
+if (!process.env.VERCEL && process.env.NODE_ENV !== "test") {
+  app.listen(ENV.PORT, () => {
+    console.log(`====================================================`);
+    console.log(`🚀 AgroSafe Backend Server running on port ${ENV.PORT}`);
+    console.log(`🌐 Supabase DB Integration: ${isLiveSupabaseConfigured() ? "Connected (Live)" : "Local Mock Storage"}`);
+    console.log(`📡 Base API URL: http://localhost:${ENV.PORT}/api`);
+    console.log(`====================================================`);
+  });
+}
 
 export default app;
