@@ -15,7 +15,7 @@ interface ClientRecord {
 const memoryStore = new Map<string, ClientRecord>();
 
 // Cleanup expired keys every 5 minutes to prevent memory leaks
-setInterval(() => {
+const cleanupInterval = setInterval(() => {
   const now = Date.now();
   for (const [key, record] of memoryStore.entries()) {
     if (now > record.resetTime) {
@@ -23,6 +23,9 @@ setInterval(() => {
     }
   }
 }, 5 * 60 * 1000);
+if (typeof cleanupInterval.unref === "function") {
+  cleanupInterval.unref();
+}
 
 export function createRateLimiter(options: RateLimitOptions) {
   const {

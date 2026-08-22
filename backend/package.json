@@ -1,6 +1,7 @@
 {
   "name": "agrosafe-backend",
   "version": "1.0.0",
+  "type": "module",
   "description": "AgroSafe Travel — Node.js & Supabase Backend for Himalayan Agrotourism & Disaster Alert Escrow System",
   "main": "dist/server.js",
   "scripts": {
