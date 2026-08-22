@@ -7,39 +7,41 @@ import { errorHandler } from "./middleware/errorHandler.js";
 
 const app = express();
 
-// CORS Configuration
-const allowedOrigins = [
-  ENV.CLIENT_URL,
-  "http://localhost:3000",
-  "http://localhost:3001",
-  "http://localhost:5173",
-  "http://127.0.0.1:3000",
-  "http://127.0.0.1:3001",
-  "http://127.0.0.1:5173",
-];
+// CORS Configuration (Disabled / Permissive Default)
+// const allowedOrigins = [
+//   ENV.CLIENT_URL,
+//   "http://localhost:3000",
+//   "http://localhost:3001",
+//   "http://localhost:5173",
+//   "http://127.0.0.1:3000",
+//   "http://127.0.0.1:3001",
+//   "http://127.0.0.1:5173",
+// ];
+// 
+// const corsOptions: cors.CorsOptions = {
+//   origin: (origin, callback) => {
+//     if (!origin) return callback(null, true);
+//     if (
+//       allowedOrigins.includes(origin) ||
+//       /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin) ||
+//       ENV.NODE_ENV !== "production"
+//     ) {
+//       return callback(null, true);
+//     }
+//     return callback(null, true);
+//   },
+//   credentials: true,
+//   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+//   allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"],
+//   exposedHeaders: ["Authorization"],
+//   preflightContinue: false,
+//   optionsSuccessStatus: 204,
+// };
+// 
+// app.use(cors(corsOptions));
+// app.options("*", cors(corsOptions));
 
-const corsOptions: cors.CorsOptions = {
-  origin: (origin, callback) => {
-    if (!origin) return callback(null, true);
-    if (
-      allowedOrigins.includes(origin) ||
-      /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin) ||
-      ENV.NODE_ENV !== "production"
-    ) {
-      return callback(null, true);
-    }
-    return callback(null, true); // Permissive in testing
-  },
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"],
-  exposedHeaders: ["Authorization"],
-  preflightContinue: false,
-  optionsSuccessStatus: 204,
-};
-
-app.use(cors(corsOptions));
-app.options("*", cors(corsOptions));
+app.use(cors()); // Allow all origins by default
 
 app.use(express.json({ limit: "15mb" }));
 app.use(express.urlencoded({ extended: true, limit: "15mb" }));
