@@ -17,7 +17,6 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
     district: one(params.district),
     subDistrict: one(params.subDistrict),
     checkIn: one(params.checkIn),
-    checkOut: one(params.checkOut),
   };
 
   const farms = await api.farms.list({

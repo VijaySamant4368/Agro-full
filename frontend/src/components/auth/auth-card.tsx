@@ -6,12 +6,14 @@ import {
   Building2,
   CheckCircle2,
   Lock,
+  Mail,
+  RefreshCw,
   User,
-  UserCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/field";
 import { useAuth } from "@/lib/auth-context";
+import { api } from "@/lib/api";
 import { toast } from "@/lib/toast-context";
 import { cn } from "@/lib/utils";
 
@@ -44,6 +46,8 @@ export function AuthCard({ initialRole = "guest" }: { initialRole?: string }) {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
+  const [verificationPendingEmail, setVerificationPendingEmail] = useState<string | null>(null);
+  const [resending, setResending] = useState(false);
 
   // Sync role state if URL param changes
   useEffect(() => {
@@ -52,11 +56,37 @@ export function AuthCard({ initialRole = "guest" }: { initialRole?: string }) {
     }
   }, [queryRole]);
 
+  // Handle verify_token query param if user clicked email verification link
+  useEffect(() => {
+    const verifyToken = searchParams.get("verify_token") || searchParams.get("token");
+    if (verifyToken) {
+      setLoading(true);
+      api.auth
+        .verifyEmail(verifyToken)
+        .then((res) => {
+          if (res.success) {
+            toast.success(res.message || "Email verified! You can now log in.", "Email Verified");
+            setTab("login");
+            setVerificationPendingEmail(null);
+            router.replace("/login", { scroll: false });
+          } else {
+            toast.error(res.error || "Email verification link is invalid or expired.", "Verification Failed");
+          }
+        })
+        .catch((err) => {
+          toast.error(err.message || "Verification failed", "Verification Error");
+        })
+        .finally(() => {
+          setLoading(false);
+        });
+    }
+  }, [searchParams, router]);
+
   const handleRoleChange = (newRole: Role) => {
     setRole(newRole);
     setError("");
     setDone(false);
-    // Update URL query smoothly
+    setVerificationPendingEmail(null);
     router.replace(`/login?role=${newRole}`, { scroll: false });
   };
 
@@ -79,6 +109,23 @@ export function AuthCard({ initialRole = "guest" }: { initialRole?: string }) {
       if (form.password !== form.confirm) return "Passwords do not match.";
     }
     return "";
+  }
+
+  async function handleResendVerification(emailToResend: string) {
+    if (!emailToResend) return;
+    setResending(true);
+    try {
+      const res = await api.auth.resendVerification(emailToResend);
+      if (res.success) {
+        toast.success("Verification link re-sent! Check your inbox.", "Email Dispatched");
+      } else {
+        toast.error(res.error || "Failed to resend email", "Rate Limit");
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Could not resend email", "Error");
+    } finally {
+      setResending(false);
+    }
   }
 
   async function submit(e: React.FormEvent) {
@@ -116,12 +163,20 @@ export function AuthCard({ initialRole = "guest" }: { initialRole?: string }) {
           password: form.password,
           phone_number: form.phone || undefined,
         });
+
         if (!res.success) {
           const errMsg = res.error || "Registration failed";
           setError(errMsg);
           toast.error(errMsg, "Sign Up Failed");
           return;
         }
+
+        if (res.requiresVerification) {
+          setVerificationPendingEmail(form.email);
+          toast.success("Account created! Verification link sent to your email.", "Check Your Inbox");
+          return;
+        }
+
         toast.success(`Account created successfully! Welcome to AgroSafe.`, "Registration Complete");
         setDone(true);
         const target = searchParams.get("redirect") || (res.user?.user_type === "host" ? "/host" : "/");
@@ -140,6 +195,7 @@ export function AuthCard({ initialRole = "guest" }: { initialRole?: string }) {
     setTab(next);
     setError("");
     setDone(false);
+    setVerificationPendingEmail(null);
   }
 
   return (
@@ -223,8 +279,47 @@ export function AuthCard({ initialRole = "guest" }: { initialRole?: string }) {
         ))}
       </div>
 
-      {/* Success State */}
-      {done ? (
+      {/* Verification Pending Screen */}
+      {verificationPendingEmail ? (
+        <div className="mt-8 rounded-xl border border-brand-200 bg-brand-50 p-6 text-center space-y-4">
+          <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-brand-700 text-white">
+            <Mail size={24} />
+          </div>
+          <div>
+            <h2 className="text-lg font-bold text-brand-950">Verify Your Email Address</h2>
+            <p className="mt-1 text-sm text-brand-800">
+              We sent a verification link to <strong className="font-semibold text-brand-950">{verificationPendingEmail}</strong>.
+            </p>
+            <p className="mt-2 text-xs text-brand-700">
+              Please click the link in your email to activate your account before logging in. (Check spam folder if not visible).
+            </p>
+          </div>
+
+          <div className="pt-3 flex flex-col sm:flex-row items-center justify-center gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              disabled={resending}
+              onClick={() => handleResendVerification(verificationPendingEmail)}
+              className="w-full sm:w-auto flex items-center gap-2"
+            >
+              <RefreshCw size={14} className={resending ? "animate-spin" : ""} />
+              {resending ? "Sending..." : "Resend Verification Email"}
+            </Button>
+            <Button
+              type="button"
+              onClick={() => {
+                setVerificationPendingEmail(null);
+                setTab("login");
+              }}
+              className="w-full sm:w-auto"
+            >
+              Back to Sign In
+            </Button>
+          </div>
+        </div>
+      ) : done ? (
+        /* Success State */
         <div className="mt-8 rounded-xl border border-brand-200 bg-brand-50 p-6 text-center space-y-4">
           <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-brand-700 text-white">
             <CheckCircle2 size={24} />
@@ -373,9 +468,19 @@ export function AuthCard({ initialRole = "guest" }: { initialRole?: string }) {
           )}
 
           {error && (
-            <p role="alert" className="rounded-lg bg-red-50 p-3 text-xs font-medium text-danger border border-red-200">
-              {error}
-            </p>
+            <div role="alert" className="rounded-lg bg-red-50 p-3.5 text-xs font-medium text-danger border border-red-200 space-y-2">
+              <p>{error}</p>
+              {error.toLowerCase().includes("verify your email") && form.email && (
+                <button
+                  type="button"
+                  disabled={resending}
+                  onClick={() => handleResendVerification(form.email)}
+                  className="text-xs font-bold text-brand-800 underline hover:text-brand-950 cursor-pointer"
+                >
+                  {resending ? "Sending..." : "Click here to resend verification email →"}
+                </button>
+              )}
+            </div>
           )}
 
           <Button type="submit" size="lg" className="w-full" disabled={loading}>

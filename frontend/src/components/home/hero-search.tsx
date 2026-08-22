@@ -11,8 +11,7 @@ interface Props {
     state: string;
     district: string;
     subDistrict: string;
-    checkIn: string;
-    checkOut: string;
+    checkIn?: string;
   };
 }
 
@@ -21,8 +20,7 @@ export function HeroSearch({ initial }: Props) {
   const [state, setState] = useState(initial.state);
   const [district, setDistrict] = useState(initial.district);
   const [subDistrict, setSubDistrict] = useState(initial.subDistrict);
-  const [checkIn, setCheckIn] = useState(initial.checkIn);
-  const [checkOut, setCheckOut] = useState(initial.checkOut);
+  const [checkIn, setCheckIn] = useState(initial.checkIn || "");
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -31,14 +29,13 @@ export function HeroSearch({ initial }: Props) {
     if (district) params.set("district", district);
     if (subDistrict) params.set("subDistrict", subDistrict);
     if (checkIn) params.set("checkIn", checkIn);
-    if (checkOut) params.set("checkOut", checkOut);
     router.push(`/?${params}#farmstays`);
   }
 
   return (
     <form
       onSubmit={submit}
-      className="grid gap-4 rounded-lg bg-white p-5 shadow-xl sm:grid-cols-2 lg:grid-cols-6 lg:items-end lg:gap-3"
+      className="grid gap-4 rounded-lg bg-white p-5 shadow-xl sm:grid-cols-2 lg:grid-cols-5 lg:items-end lg:gap-3"
     >
       <Field label="State">
         {(id) => (
@@ -107,18 +104,6 @@ export function HeroSearch({ initial }: Props) {
             type="date"
             value={checkIn}
             onChange={(e) => setCheckIn(e.target.value)}
-          />
-        )}
-      </Field>
-
-      <Field label="Check-out">
-        {(id) => (
-          <Input
-            id={id}
-            type="date"
-            min={checkIn || undefined}
-            value={checkOut}
-            onChange={(e) => setCheckOut(e.target.value)}
           />
         )}
       </Field>

@@ -524,19 +524,46 @@ export const api = {
       email: string;
       password: string;
       phone_number?: string;
-    }): Promise<{ success: boolean; token?: string; user?: any; error?: string }> {
+    }): Promise<{ success: boolean; token?: string; user?: any; requiresVerification?: boolean; message?: string; error?: string }> {
       const res = await request<any>("/auth/register", {
         method: "POST",
         body: JSON.stringify(userData),
       });
-      if (res.success && res.data?.token) {
-        if (typeof window !== "undefined") {
-          localStorage.setItem("agrosafe_token", res.data.token);
-          localStorage.setItem("agrosafe_user", JSON.stringify(res.data.user));
+      if (res.success) {
+        if (res.data?.token) {
+          if (typeof window !== "undefined") {
+            localStorage.setItem("agrosafe_token", res.data.token);
+            localStorage.setItem("agrosafe_user", JSON.stringify(res.data.user));
+          }
+          return { success: true, token: res.data.token, user: res.data.user };
         }
-        return { success: true, token: res.data.token, user: res.data.user };
+        return {
+          success: true,
+          requiresVerification: true,
+          user: res.data?.user,
+          message: res.data?.message || "Registration successful! Please verify your email before logging in.",
+        };
       }
       return { success: false, error: res.error || "Registration failed" };
+    },
+
+    async verifyEmail(token: string): Promise<{ success: boolean; message?: string; error?: string }> {
+      const res = await request<any>(`/auth/verify-email?token=${encodeURIComponent(token)}`);
+      if (res.success) {
+        return { success: true, message: res.data?.message || "Email verified successfully!" };
+      }
+      return { success: false, error: res.error || "Email verification failed" };
+    },
+
+    async resendVerification(email: string): Promise<{ success: boolean; message?: string; error?: string }> {
+      const res = await request<any>("/auth/resend-verification", {
+        method: "POST",
+        body: JSON.stringify({ email }),
+      });
+      if (res.success) {
+        return { success: true, message: res.data?.message || "Verification email sent!" };
+      }
+      return { success: false, error: res.error || "Failed to resend verification email" };
     },
 
     async me(): Promise<{ success: boolean; user?: any }> {

@@ -28,7 +28,7 @@ interface AuthContextType {
     email: string;
     password: string;
     phone_number?: string;
-  }) => Promise<{ success: boolean; error?: string; user?: AuthUser }>;
+  }) => Promise<{ success: boolean; error?: string; user?: AuthUser; requiresVerification?: boolean; message?: string }>;
   logout: () => void;
 }
 
@@ -166,26 +166,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsLoading(true);
     try {
       const res = await api.auth.register(userData);
-      if (res.success && res.token && res.user) {
-        const first_name = res.user.first_name || userData.first_name;
-        const last_name = res.user.last_name || userData.last_name;
-        const authUser: AuthUser = {
-          id: res.user.id,
-          email: res.user.email,
-          user_type: res.user.user_type,
-          first_name,
-          last_name,
-          name: `${first_name} ${last_name}`.trim(),
-          phone_number: res.user.phone_number,
+      if (res.success) {
+        if (res.token && res.user) {
+          const first_name = res.user.first_name || userData.first_name;
+          const last_name = res.user.last_name || userData.last_name;
+          const authUser: AuthUser = {
+            id: res.user.id,
+            email: res.user.email,
+            user_type: res.user.user_type,
+            first_name,
+            last_name,
+            name: `${first_name} ${last_name}`.trim(),
+            phone_number: res.user.phone_number,
+          };
+
+          setToken(res.token);
+          setUser(authUser);
+          localStorage.setItem("agrosafe_token", res.token);
+          localStorage.setItem("agrosafe_user", JSON.stringify(authUser));
+          document.cookie = `agrosafe_token=${res.token}; path=/; max-age=604800; SameSite=Lax`;
+
+          return { success: true, user: authUser };
+        }
+
+        return {
+          success: true,
+          requiresVerification: true,
+          message: res.message || "Please check your email to verify your account before logging in.",
         };
-
-        setToken(res.token);
-        setUser(authUser);
-        localStorage.setItem("agrosafe_token", res.token);
-        localStorage.setItem("agrosafe_user", JSON.stringify(authUser));
-        document.cookie = `agrosafe_token=${res.token}; path=/; max-age=604800; SameSite=Lax`;
-
-        return { success: true, user: authUser };
       }
       return { success: false, error: res.error || "Registration failed" };
     } catch (err: any) {
