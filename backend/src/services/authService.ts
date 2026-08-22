@@ -86,10 +86,15 @@ export const registerUser = async (data: {
     });
 
     if (error) {
+      console.error("❌ [Supabase safeInsert error in register]:", error);
       if (error.code === "23505" && String(error.message).includes("users_email")) {
         throw new Error("Email already registered");
       }
-      throw new Error(error.message || "Failed to register user in database");
+      const rawMsg = String(error.message || "");
+      const cleanMsg = rawMsg.includes("<html") || rawMsg.includes("<!DOCTYPE")
+        ? "Database connection failed. Please verify Supabase credentials in .env."
+        : rawMsg || "Failed to register user in database";
+      throw new Error(cleanMsg);
     }
 
     createdUser = newUser;

@@ -50,6 +50,20 @@ app.use((req, res, next) => {
   next();
 });
 
+// Ping check
+const pingHandler = (req: express.Request, res: express.Response) => {
+  res.status(200).json({
+    message: "pong",
+    timestamp: new Date().toISOString(),
+    status: "online",
+    service: "agrosafe-backend",
+    database: isLiveSupabaseConfigured() ? "connected" : "mock_mode",
+  });
+};
+
+app.get("/ping", pingHandler);
+app.get("/api/ping", pingHandler);
+
 // Health check
 app.get("/health", (req, res) => {
   res.status(200).json({

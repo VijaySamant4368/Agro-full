@@ -7,8 +7,20 @@ import reportRoutes from "./reportRoutes.js";
 import warningRoutes from "./warningRoutes.js";
 import safetyRoutes from "./safetyRoutes.js";
 import notificationRoutes from "./notificationRoutes.js";
+import { isLiveSupabaseConfigured } from "../config/supabase.js";
 
 const apiRouter = Router();
+
+// Ping endpoint
+apiRouter.get("/ping", (req, res) => {
+  res.status(200).json({
+    message: "pong",
+    timestamp: new Date().toISOString(),
+    status: "online",
+    service: "agrosafe-backend",
+    database: isLiveSupabaseConfigured() ? "connected" : "mock_mode",
+  });
+});
 
 apiRouter.use("/auth", authRoutes);
 apiRouter.use("/farms", farmRoutes);
