@@ -5,6 +5,7 @@ import { useState } from "react";
 import { ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Select } from "@/components/ui/field";
+import { useAuth } from "@/lib/auth-context";
 import { quote } from "@/lib/pricing";
 import type { Farm } from "@/lib/types";
 import { formatINR, nightsBetween } from "@/lib/utils";
@@ -16,6 +17,7 @@ interface Props {
 
 export function BookingCard({ farm, defaults }: Props) {
   const router = useRouter();
+  const { isAuthenticated } = useAuth();
   const [checkIn, setCheckIn] = useState(defaults.checkIn);
   const [checkOut, setCheckOut] = useState(defaults.checkOut);
   const [guests, setGuests] = useState(2);
@@ -31,7 +33,12 @@ export function BookingCard({ farm, defaults }: Props) {
       checkOut,
       guests: String(guests),
     });
-    router.push(`/checkout?${params}`);
+    const checkoutUrl = `/checkout?${params.toString()}`;
+    if (!isAuthenticated) {
+      router.push(`/login?redirect=${encodeURIComponent(checkoutUrl)}`);
+    } else {
+      router.push(checkoutUrl);
+    }
   }
 
   return (

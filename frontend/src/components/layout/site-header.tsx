@@ -24,24 +24,12 @@ type NavItem = {
   isHighlight?: boolean;
 };
 
-// Guest Navigation Items
-const GUEST_NAV: NavItem[] = [
-  { href: "/", label: "Home" },
-  { href: "/safety", label: "Safety Check" },
+// Base Navigation for all general users
+const BASE_NAV: NavItem[] = [
+  { href: "/", label: "Browse" },
   { href: "/report", label: "Report Landslide" },
-  { href: "/live", label: "Live Hazards" },
-  { href: "/bookings", label: "My Bookings" },
+  { href: "/live", label: "Live Landslides" },
   { href: "/matrix", label: "Safety Matrix" },
-];
-
-// Host Navigation Items (Strictly for authenticated host role)
-const HOST_NAV: NavItem[] = [
-  { href: "/host", label: "Host Hub" },
-  { href: "/host/warnings/new", label: "Broadcast Alert" },
-  { href: "/escrow", label: "Escrow Vault" },
-  { href: "/live", label: "Live Hazards" },
-  { href: "/matrix", label: "Safety Matrix" },
-  { href: "/host/farms/new", label: "List New Farm", isHighlight: true },
 ];
 
 export function SiteHeader() {
@@ -49,7 +37,21 @@ export function SiteHeader() {
   const [open, setOpen] = useState(false);
   const { user, isAuthenticated, isHost, logout } = useAuth();
 
-  const navItems: NavItem[] = isHost ? HOST_NAV : GUEST_NAV;
+  let navItems: NavItem[] = [...BASE_NAV];
+  if (isAuthenticated) {
+    if (isHost) {
+      navItems = [
+        ...BASE_NAV,
+        { href: "/host", label: "My Hostings" },
+        { href: "/host/farms/new", label: "List New Farm", isHighlight: true },
+      ];
+    } else {
+      navItems = [
+        ...BASE_NAV,
+        { href: "/bookings", label: "My Bookings" },
+      ];
+    }
+  }
 
   return (
     <header className="sticky top-0 z-50 border-b border-line bg-canvas/95 backdrop-blur">
@@ -136,7 +138,7 @@ export function SiteHeader() {
               href="/login"
               className="text-xs sm:text-sm font-bold text-brand-700 bg-brand-50 border border-brand-200 rounded-md px-3 py-1.5 hover:bg-brand-100 transition-colors"
             >
-              Sign In
+              Signup / Login
             </Link>
           )}
 
@@ -201,7 +203,7 @@ export function SiteHeader() {
                   onClick={() => setOpen(false)}
                   className="flex items-center justify-between rounded-md px-3 py-2 text-sm font-medium text-brand-700 hover:bg-brand-50"
                 >
-                  <span>Sign In / Register</span>
+                  <span>Signup / Login</span>
                   <ShieldCheck size={16} />
                 </Link>
               )}

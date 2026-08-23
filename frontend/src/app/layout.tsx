@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import type { ReactNode } from "react";
+import { type ReactNode, Suspense } from "react";
 import { AuthProvider } from "@/lib/auth-context";
 import { AuthGuard } from "@/components/auth/auth-guard";
 import { ToastProvider } from "@/lib/toast-context";
@@ -21,7 +21,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <body className="flex min-h-screen flex-col">
         <ToastProvider>
           <AuthProvider>
-            <AuthGuard>{children}</AuthGuard>
+            <Suspense fallback={null}>
+              <AuthGuard>{children}</AuthGuard>
+            </Suspense>
           </AuthProvider>
         </ToastProvider>
       </body>

@@ -1,38 +1,55 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
-import { ShieldAlert, ShieldCheck } from "lucide-react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { ShieldAlert } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 
 interface AuthGuardProps {
   children: React.ReactNode;
 }
 
+// Routes that strictly require user login
+const PROTECTED_PREFIXES = [
+  "/checkout",
+  "/bookings",
+  "/settings",
+  "/notifications",
+  "/escrow",
+  "/host",
+];
+
 export function AuthGuard({ children }: AuthGuardProps) {
-  const { user, token, isLoading, isAuthenticated, isHost } = useAuth();
+  const { isLoading, isAuthenticated, isHost } = useAuth();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const router = useRouter();
   const [deniedRoleMessage, setDeniedRoleMessage] = useState<string | null>(null);
+
+  const isProtectedRoute = PROTECTED_PREFIXES.some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
+  );
+  const isLoginPage = pathname === "/login" || pathname.startsWith("/login/");
 
   useEffect(() => {
     if (isLoading) return;
 
-    // Public routes that do not require login
-    const isPublicRoute = pathname.startsWith("/login");
-
     if (!isAuthenticated) {
-      if (!isPublicRoute) {
-        // Redirect unauthenticated user to login
-        router.replace(`/login?redirect=${encodeURIComponent(pathname)}`);
+      if (isProtectedRoute) {
+        // Redirect unauthenticated user to login with original destination + query params
+        const queryString = searchParams?.toString();
+        const fullPath = queryString ? `${pathname}?${queryString}` : pathname;
+        router.replace(`/login?redirect=${encodeURIComponent(fullPath)}`);
       }
       return;
     }
 
     // Authenticated user checks
-    if (isPublicRoute) {
-      // Already logged in, redirect away from login
-      if (isHost) {
+    if (isLoginPage) {
+      const redirectUrl = searchParams.get("redirect");
+      if (redirectUrl) {
+        router.replace(redirectUrl);
+      } else if (isHost) {
         router.replace("/host");
       } else {
         router.replace("/");
@@ -51,9 +68,9 @@ export function AuthGuard({ children }: AuthGuardProps) {
     } else {
       setDeniedRoleMessage(null);
     }
-  }, [isLoading, isAuthenticated, isHost, pathname, router]);
+  }, [isLoading, isAuthenticated, isHost, pathname, searchParams, router, isProtectedRoute, isLoginPage]);
 
-  // Loading state while checking JWT token
+  // Loading state while checking token
   if (isLoading) {
     return (
       <div className="min-h-[70vh] flex flex-col items-center justify-center gap-4 text-center px-4">
@@ -66,8 +83,8 @@ export function AuthGuard({ children }: AuthGuardProps) {
     );
   }
 
-  // If not authenticated and not on login page, render nothing while redirecting
-  if (!isAuthenticated && !pathname.startsWith("/login")) {
+  // If unauthenticated and on a protected route, render nothing while redirecting
+  if (!isAuthenticated && isProtectedRoute) {
     return null;
   }
 

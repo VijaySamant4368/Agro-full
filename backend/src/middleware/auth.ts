@@ -36,6 +36,31 @@ export const authenticateJwt = (
   }
 };
 
+export const optionalAuthJwt = (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+): void => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return next();
+  }
+
+  const token = authHeader.split(" ")[1];
+
+  try {
+    const decoded = jwt.verify(token, ENV.JWT_SECRET) as {
+      id: number;
+      email: string;
+      user_type: string;
+    };
+    req.user = decoded;
+  } catch (error) {
+    // Continue unauthenticated if token is expired or invalid
+  }
+  next();
+};
+
 export const requireHost = (
   req: AuthenticatedRequest,
   res: Response,
