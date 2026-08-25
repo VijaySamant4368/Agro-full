@@ -205,3 +205,22 @@ export const listAllWarnings = async (status?: string) => {
 
   return mockWarnings.filter((w) => !status || status === "all" || w.status === status);
 };
+
+export const revokeWarning = async (warningId: string | number) => {
+  if (isLiveSupabaseConfigured()) {
+    const { data, error } = await supabase
+      .from("warnings")
+      .update({ status: "Revoked" })
+      .or(`id.eq.${warningId},warning_code.eq.${warningId}`)
+      .select()
+      .single();
+    if (error) throw new Error(error.message);
+    return data;
+  }
+
+  const item = mockWarnings.find((w) => String(w.id) === String(warningId) || w.warning_code === String(warningId));
+  if (item) {
+    item.status = "Revoked";
+  }
+  return item || { id: warningId, status: "Revoked" };
+};

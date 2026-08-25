@@ -37,3 +37,13 @@ export const issueWarning = async (req: AuthenticatedRequest, res: Response): Pr
     data: warning,
   });
 };
+
+export const revokeWarningHandler = async (req: Request, res: Response): Promise<void> => {
+  const param = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+  const warning = await import("../services/warningService.js").then((m) => m.revokeWarning(param));
+  res.status(200).json({
+    success: true,
+    message: "Warning status updated to Revoked.",
+    data: warning,
+  });
+};

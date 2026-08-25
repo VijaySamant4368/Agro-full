@@ -35,11 +35,16 @@ const BASE_NAV: NavItem[] = [
 export function SiteHeader() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
-  const { user, isAuthenticated, isHost, logout } = useAuth();
+  const { user, isAuthenticated, isHost, isAdmin, logout } = useAuth();
 
   let navItems: NavItem[] = [...BASE_NAV];
   if (isAuthenticated) {
-    if (isHost) {
+    if (isAdmin) {
+      navItems = [
+        ...BASE_NAV,
+        { href: "/admin", label: "Admin Console", isHighlight: true },
+      ];
+    } else if (isHost) {
       navItems = [
         ...BASE_NAV,
         { href: "/host", label: "My Hostings" },
@@ -58,7 +63,7 @@ export function SiteHeader() {
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
         {/* Brand Logo */}
         <Link
-          href={isHost ? "/host" : "/"}
+          href={isAdmin ? "/admin" : isHost ? "/host" : "/"}
           className="flex items-center gap-2 text-xl font-extrabold tracking-tight text-brand-700 shrink-0"
         >
           <span className="size-2.5 rounded-full bg-brand-600 inline-block" />

@@ -51,6 +51,17 @@ let mockUsers: User[] = [
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   },
+  {
+    id: 5,
+    user_type: "admin",
+    first_name: "Admin",
+    last_name: "Console",
+    email: "admin@agrosafe.com",
+    password_hash: bcrypt.hashSync("password123", 10),
+    is_verified: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  },
 ];
 
 export function createVerificationToken(userId: number | string, email: string): string {

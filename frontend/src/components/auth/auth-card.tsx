@@ -18,7 +18,7 @@ import { toast } from "@/lib/toast-context";
 import { cn } from "@/lib/utils";
 
 type Tab = "login" | "signup";
-type Role = "guest" | "host";
+type Role = "guest" | "host" | "admin";
 
 export function AuthCard({ initialRole = "guest" }: { initialRole?: string }) {
   const router = useRouter();
@@ -28,7 +28,11 @@ export function AuthCard({ initialRole = "guest" }: { initialRole?: string }) {
   // Role can come from props or search param query
   const queryRole = searchParams.get("role");
   const [role, setRole] = useState<Role>(
-    queryRole === "host" || initialRole === "host" ? "host" : "guest"
+    queryRole === "admin" || initialRole === "admin"
+      ? "admin"
+      : queryRole === "host" || initialRole === "host"
+      ? "host"
+      : "guest"
   );
   const [tab, setTab] = useState<Tab>("login");
 
@@ -149,7 +153,9 @@ export function AuthCard({ initialRole = "guest" }: { initialRole?: string }) {
         }
         toast.success(`Welcome back, ${res.user?.first_name || "User"}!`, "Signed In");
         setDone(true);
-        const target = searchParams.get("redirect") || (res.user?.user_type === "host" ? "/host" : "/");
+        const target =
+          searchParams.get("redirect") ||
+          (res.user?.user_type === "admin" ? "/admin" : res.user?.user_type === "host" ? "/host" : "/");
         setTimeout(() => router.push(target), 800);
       } else {
         const parts = form.name.trim().split(" ");
@@ -179,7 +185,9 @@ export function AuthCard({ initialRole = "guest" }: { initialRole?: string }) {
 
         toast.success(`Account created successfully! Welcome to AgroSafe.`, "Registration Complete");
         setDone(true);
-        const target = searchParams.get("redirect") || (res.user?.user_type === "host" ? "/host" : "/");
+        const target =
+          searchParams.get("redirect") ||
+          (res.user?.user_type === "admin" ? "/admin" : res.user?.user_type === "host" ? "/host" : "/");
         setTimeout(() => router.push(target), 800);
       }
     } catch (err: any) {
@@ -200,38 +208,52 @@ export function AuthCard({ initialRole = "guest" }: { initialRole?: string }) {
 
   return (
     <div className="w-full max-w-xl rounded-2xl border border-line bg-surface p-6 shadow-sm sm:p-10">
-      {/* Host vs Guest Role Switcher at the very top */}
+      {/* Role Switcher at the top */}
       <div className="mb-8">
         <p className="mb-2.5 text-center text-xs font-bold uppercase tracking-wider text-ink-subtle">
           Select Account Type
         </p>
-        <div className="grid grid-cols-2 gap-2 rounded-xl border border-line bg-canvas p-1.5">
+        <div className="grid grid-cols-3 gap-1.5 rounded-xl border border-line bg-canvas p-1.5">
           <button
             type="button"
             onClick={() => handleRoleChange("guest")}
             className={cn(
-              "flex items-center justify-center gap-2 rounded-lg py-2.5 px-3 text-xs sm:text-sm font-bold transition-all cursor-pointer",
+              "flex items-center justify-center gap-1.5 rounded-lg py-2 px-2 text-xs font-bold transition-all cursor-pointer",
               role === "guest"
                 ? "bg-surface text-brand-800 shadow-sm border border-brand-200"
                 : "text-ink-muted hover:text-ink hover:bg-black/5"
             )}
           >
-            <User size={16} className={role === "guest" ? "text-brand-700" : "text-ink-muted"} />
-            <span>Traveler / Guest</span>
+            <User size={14} className={role === "guest" ? "text-brand-700" : "text-ink-muted"} />
+            <span>Traveler</span>
           </button>
 
           <button
             type="button"
             onClick={() => handleRoleChange("host")}
             className={cn(
-              "flex items-center justify-center gap-2 rounded-lg py-2.5 px-3 text-xs sm:text-sm font-bold transition-all cursor-pointer",
+              "flex items-center justify-center gap-1.5 rounded-lg py-2 px-2 text-xs font-bold transition-all cursor-pointer",
               role === "host"
                 ? "bg-surface text-brand-800 shadow-sm border border-brand-200"
                 : "text-ink-muted hover:text-ink hover:bg-black/5"
             )}
           >
-            <Building2 size={16} className={role === "host" ? "text-brand-700" : "text-ink-muted"} />
+            <Building2 size={14} className={role === "host" ? "text-brand-700" : "text-ink-muted"} />
             <span>Farm Host</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleRoleChange("admin")}
+            className={cn(
+              "flex items-center justify-center gap-1.5 rounded-lg py-2 px-2 text-xs font-bold transition-all cursor-pointer",
+              role === "admin"
+                ? "bg-surface text-brand-800 shadow-sm border border-brand-200"
+                : "text-ink-muted hover:text-ink hover:bg-black/5"
+            )}
+          >
+            <Lock size={14} className={role === "admin" ? "text-brand-700" : "text-ink-muted"} />
+            <span>Admin</span>
           </button>
         </div>
       </div>
@@ -239,7 +261,9 @@ export function AuthCard({ initialRole = "guest" }: { initialRole?: string }) {
       {/* Header */}
       <div className="text-center">
         <h1 className="text-3xl font-extrabold tracking-tight text-ink sm:text-4xl">
-          {role === "guest"
+          {role === "admin"
+            ? "Command Portal"
+            : role === "guest"
             ? tab === "login"
               ? "Welcome Back"
               : "Create Guest Account"
@@ -249,7 +273,9 @@ export function AuthCard({ initialRole = "guest" }: { initialRole?: string }) {
         </h1>
 
         <p className="mt-2 text-sm text-ink-muted">
-          {role === "guest"
+          {role === "admin"
+            ? "Central administrative access for all platform bookings, completed stays, escrow refunds, and disaster alerts."
+            : role === "guest"
             ? tab === "login"
               ? "Sign in to access community alerts and travel safety resources."
               : "Join to book verified farmstays and receive regional hazard alerts."
@@ -410,14 +436,18 @@ export function AuthCard({ initialRole = "guest" }: { initialRole?: string }) {
             </>
           )}
 
-          <Field label={role === "host" ? "Host Email Address" : "Email Address"}>
+          <Field label={role === "admin" ? "Admin Email Address" : role === "host" ? "Host Email Address" : "Email Address"}>
             {(id) => (
               <Input
                 id={id}
                 type="email"
                 autoComplete="email"
                 placeholder={
-                  role === "host" ? "host@myfarmstay.com" : "user@example.com"
+                  role === "admin"
+                    ? "admin@agrosafe.com"
+                    : role === "host"
+                    ? "host@myfarmstay.com"
+                    : "user@example.com"
                 }
                 value={form.email}
                 onChange={set("email")}
@@ -464,6 +494,18 @@ export function AuthCard({ initialRole = "guest" }: { initialRole?: string }) {
                 />
                 Keep me signed in
               </label>
+              {role === "admin" && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setForm({ ...form, email: "admin@agrosafe.com", password: "password123" });
+                    toast.info("Prefilled Admin Demo credentials", "Quick Fill");
+                  }}
+                  className="text-xs font-semibold text-brand-700 hover:underline cursor-pointer"
+                >
+                  Fill Demo Admin
+                </button>
+              )}
             </div>
           )}
 
@@ -486,6 +528,8 @@ export function AuthCard({ initialRole = "guest" }: { initialRole?: string }) {
           <Button type="submit" size="lg" className="w-full" disabled={loading}>
             {loading
               ? "Please wait..."
+              : role === "admin"
+              ? "Sign In to Admin Portal"
               : role === "guest"
               ? tab === "login"
                 ? "Log In"

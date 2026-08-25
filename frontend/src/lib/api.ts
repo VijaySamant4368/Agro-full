@@ -416,6 +416,12 @@ export const api = {
       }
       return { success: false, error: res.error || "Failed to broadcast warning" };
     },
+
+    async revoke(id: string): Promise<{ success: boolean; data?: any; error?: string }> {
+      return await request<any>(`/warnings/${id}/revoke`, {
+        method: "POST",
+      });
+    },
   },
 
   // 5. Landslide Reports

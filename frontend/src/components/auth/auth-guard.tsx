@@ -17,10 +17,11 @@ const PROTECTED_PREFIXES = [
   "/notifications",
   "/escrow",
   "/host",
+  "/admin",
 ];
 
 export function AuthGuard({ children }: AuthGuardProps) {
-  const { isLoading, isAuthenticated, isHost } = useAuth();
+  const { isLoading, isAuthenticated, isHost, isAdmin } = useAuth();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -49,6 +50,8 @@ export function AuthGuard({ children }: AuthGuardProps) {
       const redirectUrl = searchParams.get("redirect");
       if (redirectUrl) {
         router.replace(redirectUrl);
+      } else if (isAdmin) {
+        router.replace("/admin");
       } else if (isHost) {
         router.replace("/host");
       } else {

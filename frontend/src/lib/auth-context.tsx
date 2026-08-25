@@ -7,7 +7,7 @@ import { api } from "@/lib/api";
 export interface AuthUser {
   id: number | string;
   email: string;
-  user_type: "guest" | "host";
+  user_type: "guest" | "host" | "admin";
   first_name: string;
   last_name: string;
   name: string;
@@ -20,9 +20,10 @@ interface AuthContextType {
   isLoading: boolean;
   isAuthenticated: boolean;
   isHost: boolean;
+  isAdmin: boolean;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string; user?: AuthUser }>;
   register: (userData: {
-    user_type: "guest" | "host";
+    user_type: "guest" | "host" | "admin";
     first_name: string;
     last_name: string;
     email: string;
@@ -76,7 +77,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               const u = JSON.parse(storedUser);
               const first_name = u.first_name || (u.name ? u.name.split(" ")[0] : "User");
               const last_name = u.last_name || (u.name ? u.name.split(" ").slice(1).join(" ") : "");
-              const user_type = (u.user_type || u.role || "guest") as "guest" | "host";
+              const user_type = (u.user_type || u.role || "guest") as "guest" | "host" | "admin";
 
               parsedUser = {
                 id: u.id || 1,
@@ -99,9 +100,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 id: decoded.id || 1,
                 email: decoded.email,
                 user_type: decoded.user_type || "guest",
-                first_name: decoded.user_type === "host" ? "Rohit" : "Arjun",
-                last_name: decoded.user_type === "host" ? "Bisht" : "Verma",
-                name: decoded.user_type === "host" ? "Rohit Bisht" : "Arjun Verma",
+                first_name: decoded.user_type === "admin" ? "Admin" : decoded.user_type === "host" ? "Rohit" : "Arjun",
+                last_name: decoded.user_type === "admin" ? "Console" : decoded.user_type === "host" ? "Bisht" : "Verma",
+                name: decoded.user_type === "admin" ? "Admin Console" : decoded.user_type === "host" ? "Rohit Bisht" : "Arjun Verma",
               };
             }
           }
@@ -219,6 +220,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isLoading,
         isAuthenticated: Boolean(token && user),
         isHost: user?.user_type === "host",
+        isAdmin: user?.user_type === "admin",
         login,
         register,
         logout,

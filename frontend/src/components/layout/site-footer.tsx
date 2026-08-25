@@ -36,8 +36,9 @@ export function SiteFooter() {
 
           {/* Host Operations Col */}
           <div className="space-y-3">
-            <p className="text-xs font-bold uppercase tracking-wider text-ink">Host Portal</p>
+            <p className="text-xs font-bold uppercase tracking-wider text-ink">Host &amp; Admin</p>
             <ul className="space-y-2 text-xs text-ink-muted">
+              <li><Link href="/admin" className="text-brand-700 font-semibold hover:underline">Admin Command Hub</Link></li>
               <li><Link href="/host" className="hover:text-brand-700">Host Dashboard</Link></li>
               <li><Link href="/host/farms/new" className="hover:text-brand-700">List New Farmstay</Link></li>
               <li><Link href="/host/warnings/new" className="hover:text-brand-700">Issue Disaster Warning</Link></li>
