@@ -165,7 +165,7 @@ export function AuthCard({ initialRole = "guest" }: { initialRole?: string }) {
         const first_name = parts[0] || "User";
         const last_name = parts.slice(1).join(" ") || "Account";
         const res = await register({
-          user_type: role,
+          user_type: role === "host" ? "host" : "guest",
           first_name,
           last_name,
           email: form.email,

@@ -15,8 +15,24 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
+    if (user_type === "admin") {
+      res.status(403).json({
+        success: false,
+        error: "Admin accounts cannot be registered publicly. System administrator access required.",
+      });
+      return;
+    }
+
+    if (user_type && user_type !== "guest" && user_type !== "host") {
+      res.status(400).json({
+        success: false,
+        error: "Invalid account type. Only 'guest' or 'host' accounts can be registered.",
+      });
+      return;
+    }
+
     const result = await registerUser({
-      user_type: user_type || "guest",
+      user_type: (user_type as "guest" | "host") || "guest",
       first_name,
       last_name,
       email,

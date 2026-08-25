@@ -23,7 +23,7 @@ interface AuthContextType {
   isAdmin: boolean;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string; user?: AuthUser }>;
   register: (userData: {
-    user_type: "guest" | "host" | "admin";
+    user_type: "guest" | "host";
     first_name: string;
     last_name: string;
     email: string;
@@ -157,7 +157,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const register = async (userData: {
-    user_type: "guest" | "host" | "admin";
+    user_type: "guest" | "host";
     first_name: string;
     last_name: string;
     email: string;

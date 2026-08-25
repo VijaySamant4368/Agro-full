@@ -73,13 +73,20 @@ export function createVerificationToken(userId: number | string, email: string):
 }
 
 export const registerUser = async (data: {
-  user_type: UserType;
+  user_type: "guest" | "host";
   first_name: string;
   last_name: string;
   email: string;
   password: string;
   phone_number?: string;
 }) => {
+  if ((data.user_type as string) === "admin") {
+    throw new Error("Admin accounts cannot be registered publicly. System administrator access required.");
+  }
+  if (data.user_type !== "guest" && data.user_type !== "host") {
+    throw new Error("Invalid user type. Only 'guest' and 'host' registrations are allowed.");
+  }
+
   const lowerEmail = data.email.toLowerCase().trim();
   const password_hash = await bcrypt.hash(data.password, 10);
 
