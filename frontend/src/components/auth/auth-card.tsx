@@ -88,6 +88,9 @@ export function AuthCard({ initialRole = "guest" }: { initialRole?: string }) {
 
   const handleRoleChange = (newRole: Role) => {
     setRole(newRole);
+    if (newRole === "admin") {
+      setTab("login");
+    }
     setError("");
     setDone(false);
     setVerificationPendingEmail(null);
@@ -285,25 +288,32 @@ export function AuthCard({ initialRole = "guest" }: { initialRole?: string }) {
         </p>
       </div>
 
-      {/* Login vs Sign Up Tabs */}
-      <div className="mt-8 grid grid-cols-2 border-b border-line" role="tablist">
-        {(["login", "signup"] as const).map((t) => (
-          <button
-            key={t}
-            role="tab"
-            aria-selected={tab === t}
-            onClick={() => switchTo(t)}
-            className={cn(
-              "-mb-px border-b-2 pb-3 text-sm font-bold transition-colors cursor-pointer",
-              tab === t
-                ? "border-brand-700 text-brand-700"
-                : "border-transparent text-ink-muted hover:text-ink"
-            )}
-          >
-            {t === "login" ? "Login" : "Sign Up"}
-          </button>
-        ))}
-      </div>
+      {/* Login vs Sign Up Tabs (Only for Guest & Host, Admin is strictly Sign In) */}
+      {role !== "admin" ? (
+        <div className="mt-8 grid grid-cols-2 border-b border-line" role="tablist">
+          {(["login", "signup"] as const).map((t) => (
+            <button
+              key={t}
+              role="tab"
+              aria-selected={tab === t}
+              onClick={() => switchTo(t)}
+              className={cn(
+                "-mb-px border-b-2 pb-3 text-sm font-bold transition-colors cursor-pointer",
+                tab === t
+                  ? "border-brand-700 text-brand-700"
+                  : "border-transparent text-ink-muted hover:text-ink"
+              )}
+            >
+              {t === "login" ? "Login" : "Sign Up"}
+            </button>
+          ))}
+        </div>
+      ) : (
+        <div className="mt-6 flex items-center justify-center gap-2 rounded-lg bg-black/[0.03] py-2 px-3 text-xs font-semibold text-ink-muted border border-line">
+          <Lock size={13} className="text-brand-700" />
+          <span>Restricted Admin Portal • Authorized Sign In Only</span>
+        </div>
+      )}
 
       {/* Verification Pending Screen */}
       {verificationPendingEmail ? (
@@ -539,7 +549,7 @@ export function AuthCard({ initialRole = "guest" }: { initialRole?: string }) {
               : "Register as Farm Host"}
           </Button>
 
-          {tab === "login" && (
+          {tab === "login" && role !== "admin" && (
             <div className="pt-2">
               <button
                 type="button"
