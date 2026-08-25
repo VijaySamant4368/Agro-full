@@ -1,8 +1,8 @@
-import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, ShieldCheck } from "lucide-react";
 import { FarmCard } from "@/components/home/farm-card";
 import { HeroSearch } from "@/components/home/hero-search";
+import { HeroCarousel } from "@/components/home/hero-carousel";
 import { ButtonLink } from "@/components/ui/button";
 import { api } from "@/lib/api";
 
@@ -28,22 +28,13 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
 
   return (
     <>
-      {/* Hero */}
-      <section className="relative isolate">
-        <Image
-          src="https://picsum.photos/seed/agrosafe-hero/1920/1080"
-          alt=""
-          fill
-          priority
-          className="-z-10 object-cover"
-        />
-        <div className="absolute inset-0 -z-10 bg-brand-900/70" />
-
+      {/* Dynamic Video & Image Hero Carousel */}
+      <HeroCarousel>
         <div className="mx-auto max-w-6xl px-4 py-16 text-center sm:px-6 sm:py-24 lg:px-8">
-          <h1 className="text-4xl font-extrabold tracking-tight text-white sm:text-5xl lg:text-6xl">
+          <h1 className="text-4xl font-extrabold tracking-tight text-white sm:text-5xl lg:text-6xl drop-shadow-sm">
             Explore Rural India, Safely.
           </h1>
-          <p className="mx-auto mt-4 max-w-2xl text-base text-white/90 sm:text-lg">
+          <p className="mx-auto mt-4 max-w-2xl text-base text-white/95 sm:text-lg drop-shadow-xs">
             Discover authenticated agrotourism experiences with real-time safety metrics and
             environmental landslide monitoring.
           </p>
@@ -52,7 +43,7 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
             <HeroSearch initial={query} />
           </div>
         </div>
-      </section>
+      </HeroCarousel>
 
       {/* Listings */}
       <section id="farmstays" className="mx-auto max-w-7xl px-4 py-14 sm:px-6 sm:py-20 lg:px-8">
