@@ -73,8 +73,8 @@ export function AuthGuard({ children }: AuthGuardProps) {
     }
   }, [isLoading, isAuthenticated, isHost, pathname, searchParams, router, isProtectedRoute, isLoginPage]);
 
-  // Loading state while checking token
-  if (isLoading) {
+  // Loading state while checking token - only block rendering for strictly protected routes
+  if (isLoading && isProtectedRoute) {
     return (
       <div className="min-h-[70vh] flex flex-col items-center justify-center gap-4 text-center px-4">
         <div className="size-12 rounded-full border-4 border-brand-200 border-t-brand-700 animate-spin" />

@@ -144,7 +144,7 @@ export default function AdminDashboardPage() {
         : bookingFilter === "cancelled"
         ? b.status === "cancelled" || b.escrowStatus === "Refunded_To_Guest"
         : bookingFilter === "upcoming"
-        ? b.status === "upcoming" || b.status === "confirmed"
+        ? b.status === "upcoming"
         : true;
 
     const term = bookingSearch.toLowerCase().trim();

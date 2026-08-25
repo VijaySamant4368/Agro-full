@@ -157,7 +157,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const register = async (userData: {
-    user_type: "guest" | "host";
+    user_type: "guest" | "host" | "admin";
     first_name: string;
     last_name: string;
     email: string;
