@@ -374,9 +374,9 @@ export default function AdminDashboardPage() {
               </span>
             </div>
             <p className="mt-1 text-xs text-ink-muted flex items-center gap-2">
-              <span>🤖 CNN: <strong>{automatedAlerts.length}</strong></span>
+              <span>CNN: <strong>{automatedAlerts.length}</strong></span>
               <span>•</span>
-              <span>👤 Manual: <strong>{manualAlerts.length}</strong></span>
+              <span>Manual: <strong>{manualAlerts.length}</strong></span>
             </p>
           </div>
         </Card>
@@ -856,8 +856,8 @@ export default function AdminDashboardPage() {
               <div className="flex rounded-lg border border-line p-1 bg-surface">
                 {[
                   { id: "all", label: "All Alerts" },
-                  { id: "Automated_CNN", label: "🤖 Automated CNN" },
-                  { id: "Manual_Host", label: "👤 Manual Broadcast" },
+                  { id: "Automated_CNN", label: "Automated CNN" },
+                  { id: "Manual_Host", label: "Manual Broadcast" },
                 ].map((f) => (
                   <button
                     key={f.id}

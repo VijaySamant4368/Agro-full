@@ -127,8 +127,8 @@ export default function WarningsFeedPage() {
             <div className="flex rounded-lg border border-line p-1 bg-canvas">
               {[
                 { id: "all", label: "All Sources" },
-                { id: "Automated_CNN", label: "🤖 Automated CNN" },
-                { id: "Manual_Host", label: "🏡 Host Manual" },
+                { id: "Automated_CNN", label: "Automated CNN" },
+                { id: "Manual_Host", label: "Host Manual" },
               ].map((src) => (
                 <button
                   key={src.id}

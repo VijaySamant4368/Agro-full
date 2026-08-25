@@ -97,7 +97,7 @@ export default function EscrowLifecyclePage() {
         })
       );
       toast.success(`Stay verified. ${formatINR(activeEscrow.stayAmount)} released from escrow to host.`, "Payout Released");
-      setSimulationNotice(`✅ Backend API: Stay verified. ${formatINR(activeEscrow.stayAmount)} released from escrow to host.`);
+      setSimulationNotice(`Backend API: Stay verified. ${formatINR(activeEscrow.stayAmount)} released from escrow to host.`);
     } catch (err: any) {
       toast.error(err.message || "Failed to release payout", "Error");
     }
@@ -140,7 +140,7 @@ export default function EscrowLifecyclePage() {
         })
       );
       toast.warning(`Disaster alert verified! 100% refund (${formatINR(activeEscrow.totalCharged)}) disbursed to guest.`, "Refund Processed");
-      setSimulationNotice(`⚠️ Backend API: Disaster warning triggered! 100% full refund (${formatINR(activeEscrow.totalCharged)}) disbursed to guest.`);
+      setSimulationNotice(`Backend API: Disaster warning triggered! 100% full refund (${formatINR(activeEscrow.totalCharged)}) disbursed to guest.`);
     } catch (err: any) {
       toast.error(err.message || "Failed to process disaster refund", "Error");
     }

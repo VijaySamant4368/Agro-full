@@ -64,6 +64,8 @@ let mockUsers: User[] = [
   },
 ];
 
+export const findMockUserById = (id: number) => mockUsers.find((u) => u.id === id);
+
 export function createVerificationToken(userId: number | string, email: string): string {
   return jwt.sign(
     { userId, email, purpose: "email_verification" },
@@ -104,7 +106,7 @@ export const registerUser = async (data: {
     });
 
     if (error) {
-      console.error("❌ [Supabase safeInsert error in register]:", error);
+      console.error("[Supabase safeInsert error in register]:", error);
       if (error.code === "23505" && String(error.message).includes("users_email")) {
         throw new Error("Email already registered");
       }
@@ -143,7 +145,7 @@ export const registerUser = async (data: {
   try {
     await sendVerificationEmail(createdUser.email, createdUser.first_name, verifyToken);
   } catch (emailErr: any) {
-    console.warn("⚠️ [Auth] Could not send verification email:", emailErr.message);
+    console.warn("[Auth] Could not send verification email:", emailErr.message);
   }
 
   // Strictly DO NOT return session token until email is verified

@@ -8,7 +8,7 @@ function getTransporter(): nodemailer.Transporter | null {
   if (transporter) return transporter;
 
   if (!ENV.SMTP_USER || !ENV.SMTP_PASS) {
-    console.warn("⚠️ [Email] SMTP credentials not set in .env (SMTP_USER / SMTP_PASS). Verification emails will be logged to console.");
+    console.warn("[Email] SMTP credentials not set in .env (SMTP_USER / SMTP_PASS). Emails will be logged to console.");
     return null;
   }
 
@@ -25,19 +25,12 @@ function getTransporter(): nodemailer.Transporter | null {
   return transporter;
 }
 
-export async function sendVerificationEmail(
-  email: string,
-  firstName: string,
-  token: string
-): Promise<{ success: boolean; messageId?: string; simulated?: boolean }> {
-  const verifyUrl = `${ENV.APP_URL}/login?verify_token=${encodeURIComponent(token)}`;
+function formatINR(amount: number): string {
+  return `₹${amount.toLocaleString("en-IN")}`;
+}
 
-  const mailOptions = {
-    from: ENV.EMAIL_FROM,
-    to: email,
-    subject: "Verify your email — AgroSafe Travel",
-    text: `Hello ${firstName},\n\nPlease verify your email for AgroSafe Travel by clicking this link:\n${verifyUrl}\n\nThis link will expire in 24 hours.\n\nSafe travels,\nAgroSafe Team`,
-    html: `
+function emailShell(title: string, bodyHtml: string): string {
+  return `
       <!DOCTYPE html>
       <html>
         <head>
@@ -51,46 +44,172 @@ export async function sendVerificationEmail(
             .btn { display: inline-block; background-color: #1b633e; color: #ffffff !important; font-weight: 700; font-size: 15px; text-decoration: none; padding: 12px 28px; border-radius: 8px; margin: 20px 0; }
             .footer { margin-top: 32px; border-top: 1px solid #e1ebe3; padding-top: 16px; font-size: 12px; color: #739180; }
             .alt-link { word-break: break-all; font-size: 13px; color: #1b633e; }
+            .detail-table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+            .detail-table td { padding: 6px 0; font-size: 14px; color: #3e5649; border-bottom: 1px solid #eef3ef; }
+            .detail-table td:first-child { font-weight: 600; color: #1c2e24; width: 40%; }
           </style>
         </head>
         <body>
           <div class="container">
-            <div class="logo">🌿 AgroSafe Travel</div>
-            <h1>Verify your email address</h1>
-            <p>Hi ${firstName},</p>
-            <p>Thank you for joining AgroSafe Travel. Click the button below to verify your email and activate your account:</p>
-            <div style="text-align: center;">
-              <a href="${verifyUrl}" class="btn" target="_blank">Verify My Account</a>
-            </div>
-            <p style="font-size: 13px; color: #5a7566;">Or copy and paste this link in your browser:</p>
-            <p class="alt-link">${verifyUrl}</p>
+            <div class="logo">AgroSafe Travel</div>
+            <h1>${title}</h1>
+            ${bodyHtml}
             <div class="footer">
-              <p>This verification link will expire in 24 hours.<br>If you did not create an account on AgroSafe Travel, please ignore this email.</p>
+              <p>AgroSafe Travel — Himalayan Agrotourism & Disaster Alert Escrow System.</p>
             </div>
           </div>
         </body>
       </html>
-    `,
-  };
+    `;
+}
 
+async function dispatchEmail(mailOptions: {
+  to: string;
+  subject: string;
+  text: string;
+  html: string;
+}): Promise<{ success: boolean; messageId?: string; simulated?: boolean }> {
+  const full = { from: ENV.EMAIL_FROM, ...mailOptions };
   const client = getTransporter();
 
   if (!client) {
     console.log("==================================================");
-    console.log("📧 [SIMULATED EMAIL DISPATCH]");
-    console.log(`To: ${email} (${firstName})`);
-    console.log(`Subject: ${mailOptions.subject}`);
-    console.log(`🔗 Verification Link: ${verifyUrl}`);
+    console.log("[SIMULATED EMAIL DISPATCH]");
+    console.log(`To: ${full.to}`);
+    console.log(`Subject: ${full.subject}`);
+    console.log(full.text);
     console.log("==================================================");
     return { success: true, simulated: true };
   }
 
   try {
-    const info = await client.sendMail(mailOptions);
-    console.log(`📧 [Email Sent] Verification email sent to ${email} (Message ID: ${info.messageId})`);
+    const info = await client.sendMail(full);
+    console.log(`[Email Sent] "${full.subject}" sent to ${full.to} (Message ID: ${info.messageId})`);
     return { success: true, messageId: info.messageId };
   } catch (err: any) {
-    console.error(`❌ [Email Error] Failed to send email to ${email}:`, err.message);
+    console.error(`[Email Error] Failed to send "${full.subject}" to ${full.to}:`, err.message);
     throw new Error(`Email delivery failed: ${err.message}`);
   }
+}
+
+export async function sendVerificationEmail(
+  email: string,
+  firstName: string,
+  token: string
+): Promise<{ success: boolean; messageId?: string; simulated?: boolean }> {
+  const verifyUrl = `${ENV.APP_URL}/login?verify_token=${encodeURIComponent(token)}`;
+
+  const text = `Hello ${firstName},\n\nPlease verify your email for AgroSafe Travel by clicking this link:\n${verifyUrl}\n\nThis link will expire in 24 hours.\n\nSafe travels,\nAgroSafe Team`;
+
+  const html = emailShell(
+    "Verify your email address",
+    `
+      <p>Hi ${firstName},</p>
+      <p>Thank you for joining AgroSafe Travel. Click the button below to verify your email and activate your account:</p>
+      <div style="text-align: center;">
+        <a href="${verifyUrl}" class="btn" target="_blank">Verify My Account</a>
+      </div>
+      <p style="font-size: 13px; color: #5a7566;">Or copy and paste this link in your browser:</p>
+      <p class="alt-link">${verifyUrl}</p>
+      <p style="font-size: 13px; color: #5a7566;">This verification link will expire in 24 hours. If you did not create an account on AgroSafe Travel, please ignore this email.</p>
+    `
+  );
+
+  return dispatchEmail({
+    to: email,
+    subject: "Verify your email — AgroSafe Travel",
+    text,
+    html,
+  });
+}
+
+export async function sendHostBookingEmail(
+  hostEmail: string,
+  hostName: string,
+  details: {
+    guestName: string;
+    farmTitle: string;
+    bookingCode: string;
+    stayStartDate: string;
+    stayEndDate: string;
+    totalGuests: number;
+    stayAmount: number;
+  }
+): Promise<{ success: boolean; messageId?: string; simulated?: boolean }> {
+  const dashboardUrl = `${ENV.APP_URL}/host`;
+  const amount = formatINR(details.stayAmount);
+
+  const text = `Hello ${hostName},\n\n${details.guestName} just booked "${details.farmTitle}" for ${details.stayStartDate} to ${details.stayEndDate} (${details.totalGuests} guest(s)).\n\nBooking Ref: ${details.bookingCode}\nStay Amount: ${amount} (held in AgroSafe Escrow until checkout)\n\nView it in your Host Dashboard:\n${dashboardUrl}\n\nSafe travels,\nAgroSafe Team`;
+
+  const html = emailShell(
+    "Your farmstay was booked",
+    `
+      <p>Hi ${hostName},</p>
+      <p><strong>${details.guestName}</strong> just booked <strong>${details.farmTitle}</strong>. Funds are already locked in the AgroSafe Escrow Vault and will be released to you after checkout.</p>
+      <table class="detail-table">
+        <tr><td>Booking Ref</td><td>${details.bookingCode}</td></tr>
+        <tr><td>Check-in</td><td>${details.stayStartDate}</td></tr>
+        <tr><td>Check-out</td><td>${details.stayEndDate}</td></tr>
+        <tr><td>Guests</td><td>${details.totalGuests}</td></tr>
+        <tr><td>Stay Amount</td><td>${amount}</td></tr>
+      </table>
+      <div style="text-align: center;">
+        <a href="${dashboardUrl}" class="btn" target="_blank">View in Host Dashboard</a>
+      </div>
+    `
+  );
+
+  return dispatchEmail({
+    to: hostEmail,
+    subject: `New Booking: ${details.farmTitle} (${details.bookingCode})`,
+    text,
+    html,
+  });
+}
+
+export async function sendAdminPaymentEmail(details: {
+  bookingCode: string;
+  paymentCode: string;
+  guestName: string;
+  guestEmail: string;
+  hostName: string;
+  farmTitle: string;
+  totalCharged: number;
+  gatewayRef: string;
+}): Promise<{ success: boolean; messageId?: string; simulated?: boolean } | null> {
+  if (!ENV.ADMIN_EMAIL) {
+    console.warn("[Email] ADMIN_EMAIL not set in .env — skipping admin payment notification.");
+    return null;
+  }
+
+  const amount = formatINR(details.totalCharged);
+  const escrowUrl = `${ENV.APP_URL}/escrow`;
+
+  const text = `Payment captured on AgroSafe Travel.\n\nBooking Ref: ${details.bookingCode}\nPayment Ref: ${details.paymentCode}\nFarm: ${details.farmTitle}\nHost: ${details.hostName}\nGuest: ${details.guestName} (${details.guestEmail})\nAmount Charged: ${amount}\nGateway Ref: ${details.gatewayRef}\n\nFunds are held in escrow pending stay completion.\n\nEscrow Ledger:\n${escrowUrl}`;
+
+  const html = emailShell(
+    "Payment captured",
+    `
+      <p>A new payment was captured and locked in escrow.</p>
+      <table class="detail-table">
+        <tr><td>Booking Ref</td><td>${details.bookingCode}</td></tr>
+        <tr><td>Payment Ref</td><td>${details.paymentCode}</td></tr>
+        <tr><td>Farm</td><td>${details.farmTitle}</td></tr>
+        <tr><td>Host</td><td>${details.hostName}</td></tr>
+        <tr><td>Guest</td><td>${details.guestName} (${details.guestEmail})</td></tr>
+        <tr><td>Amount Charged</td><td>${amount}</td></tr>
+        <tr><td>Gateway Ref</td><td>${details.gatewayRef}</td></tr>
+      </table>
+      <div style="text-align: center;">
+        <a href="${escrowUrl}" class="btn" target="_blank">Open Escrow Ledger</a>
+      </div>
+    `
+  );
+
+  return dispatchEmail({
+    to: ENV.ADMIN_EMAIL,
+    subject: `Payment Captured: ${details.bookingCode} — ${amount}`,
+    text,
+    html,
+  });
 }

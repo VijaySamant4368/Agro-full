@@ -455,7 +455,7 @@ export default function NewFarmPage() {
             </Card>
 
             <div className="rounded-lg border border-line bg-surface p-4 text-xs text-ink-muted space-y-2">
-              <p className="font-semibold text-ink">🛡️ AgroSafe Guarantee for Hosts:</p>
+              <p className="font-semibold text-ink">AgroSafe Guarantee for Hosts:</p>
               <ul className="list-disc list-inside space-y-1 text-ink-subtle">
                 <li>Automatic risk assessment on the 12-month Himalayan Matrix.</li>
                 <li>Stay amounts locked in Escrow Vault at time of guest booking.</li>

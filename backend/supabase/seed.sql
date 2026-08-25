@@ -182,7 +182,7 @@ SELECT setval('booking_status_log_id_seq', (SELECT MAX(id) FROM booking_status_l
 
 -- 11. SEED NOTIFICATION LOGS
 INSERT INTO notification_log (id, user_id, warning_id, related_booking_id, notification_type, title, message_content, is_read, severity, dispatched_at) VALUES
-(1, 3, 1, 3, 'Push', '⚠️ Hazard Alert: Joshimath Sector', 'A verified mudslide debris flow was reported near Joshimath. Your booking ref AGS-47612 has been refunded under 100% Escrow Protection.', false, 'warning', '2026-08-07 12:45:00+00'),
+(1, 3, 1, 3, 'Push', 'Hazard Alert: Joshimath Sector', 'A verified mudslide debris flow was reported near Joshimath. Your booking ref AGS-47612 has been refunded under 100% Escrow Protection.', false, 'warning', '2026-08-07 12:45:00+00'),
 (2, 1, 2, null, 'SMS', 'Manual Warning Broadcast Active', 'Your manual safety alert for Parashar hill slope has been broadcast across the regional safety network.', true, 'info', '2026-08-06 09:35:00+00'),
 (3, 2, null, 2, 'Push', 'Escrow Payout Credited: ₹16,500', 'Pooja Sharma''s checkout at Naggar Heritage Apple Estate was completed. Funds released to your bank account.', true, 'info', '2026-06-06 04:05:00+00'),
 (4, 4, null, 4, 'Email', 'Booking Confirmation & Escrow Hold', 'Your reservation AGS-49102 at Sangla Valley Saffron & Almond Estate is confirmed and secured in escrow.', false, 'info', '2026-08-10 14:32:00+00')

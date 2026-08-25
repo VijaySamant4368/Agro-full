@@ -13,6 +13,8 @@ const mockGeoRefs: StaticGeoReference[] = [
 
 let mockFarms: Farm[] = [];
 
+export const findMockFarmById = (id: number) => mockFarms.find((f) => f.id === id);
+
 export const getGeoFallback = async (state: string, district: string, subdistrict?: string) => {
   if (isLiveSupabaseConfigured()) {
     let query = supabase

@@ -96,9 +96,9 @@ app.use(errorHandler);
 if (!process.env.VERCEL && process.env.NODE_ENV !== "test") {
   app.listen(ENV.PORT, () => {
     console.log(`====================================================`);
-    console.log(`🚀 AgroSafe Backend Server running on port ${ENV.PORT}`);
-    console.log(`🌐 Supabase DB Integration: ${isLiveSupabaseConfigured() ? "Connected (Live)" : "Local Mock Storage"}`);
-    console.log(`📡 Base API URL: http://localhost:${ENV.PORT}/api`);
+    console.log(`AgroSafe Backend Server running on port ${ENV.PORT}`);
+    console.log(`Supabase DB Integration: ${isLiveSupabaseConfigured() ? "Connected (Live)" : "Local Mock Storage"}`);
+    console.log(`Base API URL: http://localhost:${ENV.PORT}/api`);
     console.log(`====================================================`);
   });
 }

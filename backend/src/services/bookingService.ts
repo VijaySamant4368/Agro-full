@@ -1,7 +1,63 @@
 import { supabase, isLiveSupabaseConfigured, safeInsert } from "../config/supabase.js";
 import { Booking, BookingStatus, Payment, PaymentTransactionLog, BookingStatusLog } from "../types/index.js";
+import { createNotification } from "./notificationService.js";
+import { sendHostBookingEmail, sendAdminPaymentEmail } from "./emailService.js";
+import { findMockFarmById } from "./farmService.js";
+import { findMockUserById } from "./authService.js";
 
 let mockBookings: any[] = [];
+
+// Notifies the host + admin that a booking/payment landed. Best-effort: must never fail the booking itself.
+async function dispatchBookingSideEffects(params: {
+  bookingId: number;
+  hostId: number;
+  hostEmail?: string;
+  hostName: string;
+  guestName: string;
+  guestEmail?: string;
+  farmTitle: string;
+  bookingCode: string;
+  paymentCode: string;
+  stayStartDate: string;
+  stayEndDate: string;
+  totalGuests: number;
+  totalCharged: number;
+  gatewayRef: string;
+}) {
+  const guestNoun = params.totalGuests > 1 ? "guests" : "guest";
+
+  await createNotification({
+    user_id: params.hostId,
+    related_booking_id: params.bookingId,
+    notification_type: "Push",
+    title: `New Booking: ${params.farmTitle}`,
+    message_content: `${params.guestName} booked "${params.farmTitle}" for ${params.stayStartDate} to ${params.stayEndDate} (${params.totalGuests} ${guestNoun}). Ref ${params.bookingCode}. ₹${params.totalCharged.toLocaleString("en-IN")} is held in escrow until checkout.`,
+    severity: "info",
+  });
+
+  if (params.hostEmail) {
+    await sendHostBookingEmail(params.hostEmail, params.hostName, {
+      guestName: params.guestName,
+      farmTitle: params.farmTitle,
+      bookingCode: params.bookingCode,
+      stayStartDate: params.stayStartDate,
+      stayEndDate: params.stayEndDate,
+      totalGuests: params.totalGuests,
+      stayAmount: params.totalCharged,
+    });
+  }
+
+  await sendAdminPaymentEmail({
+    bookingCode: params.bookingCode,
+    paymentCode: params.paymentCode,
+    guestName: params.guestName,
+    guestEmail: params.guestEmail || "unknown",
+    hostName: params.hostName,
+    farmTitle: params.farmTitle,
+    totalCharged: params.totalCharged,
+    gatewayRef: params.gatewayRef,
+  });
+}
 
 export const createBookingWithEscrow = async (data: {
   guest_id: number;
@@ -74,6 +130,38 @@ export const createBookingWithEscrow = async (data: {
       reason: "Escrow payment captured & verified",
     });
 
+    // 5. Notify host + admin (best-effort, must not fail the booking)
+    try {
+      const { data: full } = await supabase
+        .from("bookings")
+        .select("*, farms(title, host_id, users(first_name, last_name, email)), users(first_name, last_name, email)")
+        .eq("id", booking.id)
+        .single();
+
+      if (full?.farms?.host_id) {
+        const host = full.farms.users;
+        const guest = full.users;
+        await dispatchBookingSideEffects({
+          bookingId: booking.id,
+          hostId: full.farms.host_id,
+          hostEmail: host?.email,
+          hostName: host?.first_name || "Host",
+          guestName: guest ? `${guest.first_name} ${guest.last_name}`.trim() : "A guest",
+          guestEmail: guest?.email,
+          farmTitle: full.farms.title,
+          bookingCode: booking_code,
+          paymentCode: payment_code,
+          stayStartDate: data.stay_start_date,
+          stayEndDate: data.stay_end_date,
+          totalGuests: data.total_guests,
+          totalCharged: total_charged,
+          gatewayRef: gateway_ref,
+        });
+      }
+    } catch (err: any) {
+      console.warn("[Booking] Failed to send booking notifications:", err.message);
+    }
+
     return { booking, payment };
   }
 
@@ -99,6 +187,35 @@ export const createBookingWithEscrow = async (data: {
     },
   };
   mockBookings.push(newBooking);
+
+  // Notify host + admin (best-effort, must not fail the booking)
+  try {
+    const farm = findMockFarmById(data.farm_id);
+    const host = farm ? findMockUserById(farm.host_id) : undefined;
+    const guest = findMockUserById(data.guest_id);
+
+    if (farm && host) {
+      await dispatchBookingSideEffects({
+        bookingId: newBooking.id,
+        hostId: host.id,
+        hostEmail: host.email,
+        hostName: host.first_name,
+        guestName: guest ? `${guest.first_name} ${guest.last_name}`.trim() : "A guest",
+        guestEmail: guest?.email,
+        farmTitle: farm.title,
+        bookingCode: booking_code,
+        paymentCode: payment_code,
+        stayStartDate: data.stay_start_date,
+        stayEndDate: data.stay_end_date,
+        totalGuests: data.total_guests,
+        totalCharged: total_charged,
+        gatewayRef: gateway_ref,
+      });
+    }
+  } catch (err: any) {
+    console.warn("[Booking] Failed to send booking notifications:", err.message);
+  }
+
   return { booking: newBooking, payment: newBooking.payments };
 };
 

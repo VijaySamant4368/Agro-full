@@ -337,7 +337,7 @@ export default function NewHostWarningPage() {
           </Card>
 
           <Card className="p-5 bg-canvas/60">
-            <p className="text-xs font-bold text-ink">⚡ Live Broadcast Preview</p>
+            <p className="text-xs font-bold text-ink">Live Broadcast Preview</p>
             <div className="mt-3 rounded-lg border border-red-200 bg-white p-4 text-xs shadow-sm">
               <div className="flex items-center gap-2 text-danger font-bold">
                 <AlertOctagon size={14} />

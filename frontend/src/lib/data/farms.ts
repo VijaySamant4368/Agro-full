@@ -922,7 +922,7 @@ export const NOTIFICATIONS: NotificationLog[] = [
     id: "1",
     userId: "3",
     userRole: "guest",
-    title: "⚠️ Hazard Alert: Joshimath Sector",
+    title: "Hazard Alert: Joshimath Sector",
     messageContent: "A verified mudslide debris flow was reported near Joshimath. Your booking ref AGS-47612 has been refunded under 100% Escrow Protection.",
     severity: "warning",
     notificationType: "Push",

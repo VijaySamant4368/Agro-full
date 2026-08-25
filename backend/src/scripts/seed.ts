@@ -4,13 +4,13 @@ import { ENV } from "../config/env.js";
 
 async function runSeed() {
   console.log("==================================================");
-  console.log("🌱 AGROSAFE TRAVEL — SUPABASE SEED SCRIPT");
+  console.log("AGROSAFE TRAVEL — SUPABASE SEED SCRIPT");
   console.log("==================================================");
   console.log(`DB Mode: ${ENV.DB_MODE}`);
   console.log(`Live Supabase Configured: ${isLiveSupabaseConfigured()}`);
 
   if (!isLiveSupabaseConfigured()) {
-    console.error("❌ Live Supabase credentials not found or set to mock. Please check your credentials in .env.");
+    console.error("Live Supabase credentials not found or set to mock. Please check your credentials in .env.");
     process.exit(1);
   }
 
@@ -27,7 +27,7 @@ async function runSeed() {
     ];
     const { error: userErr } = await supabase.from("users").upsert(usersData, { onConflict: "id" });
     if (userErr) throw new Error(`Users seed error: ${userErr.message}`);
-    console.log("✅ Users seeded (4 records)");
+    console.log("Users seeded (4 records)");
 
     // 2. Seed Static Geo Reference (Northern Hilly Districts)
     console.log("\n[2/11] Seeding Static Geo References...");
@@ -61,7 +61,7 @@ async function runSeed() {
     ];
     const { error: geoErr } = await supabase.from("static_geo_reference").upsert(geoData, { onConflict: "id" });
     if (geoErr) throw new Error(`Static Geo seed error: ${geoErr.message}`);
-    console.log("✅ Static Geo References seeded (26 records)");
+    console.log("Static Geo References seeded (26 records)");
 
     // 3. Seed Monthly Safe Matrix
     console.log("\n[3/11] Seeding Monthly Safe Matrix...");
@@ -102,7 +102,7 @@ async function runSeed() {
     }
     const { error: matErr } = await supabase.from("monthly_safe_matrix").upsert(matrixData, { onConflict: "state,district,year,month" });
     if (matErr) throw new Error(`Monthly Matrix seed error: ${matErr.message}`);
-    console.log(`✅ Monthly Safe Matrix seeded (${matrixData.length} records)`);
+    console.log(`Monthly Safe Matrix seeded (${matrixData.length} records)`);
 
     // 4. Seed Farms (24 Farms in Northern Hilly Areas between Host 1 and Host 2)
     console.log("\n[4/11] Seeding Farms (24 Northern Hilly Farmstays)...");
@@ -594,7 +594,7 @@ async function runSeed() {
 
     const { error: farmErr } = await supabase.from("farms").upsert(farmsData, { onConflict: "id" });
     if (farmErr) throw new Error(`Farms seed error: ${farmErr.message}`);
-    console.log(`✅ Farms seeded (${farmsData.length} Northern Hilly farmstays across 2 Hosts)`);
+    console.log(`Farms seeded (${farmsData.length} Northern Hilly farmstays across 2 Hosts)`);
 
     // 5. Seed Bookings
     console.log("\n[5/11] Seeding Bookings...");
@@ -606,7 +606,7 @@ async function runSeed() {
     ];
     const { error: bookErr } = await supabase.from("bookings").upsert(bookingsData, { onConflict: "id" });
     if (bookErr) throw new Error(`Bookings seed error: ${bookErr.message}`);
-    console.log("✅ Bookings seeded (4 records)");
+    console.log("Bookings seeded (4 records)");
 
     // 6. Seed Landslide Reports
     console.log("\n[6/11] Seeding Landslide Reports...");
@@ -617,7 +617,7 @@ async function runSeed() {
     ];
     const { error: repErr } = await supabase.from("landslide_reports").upsert(reportsData, { onConflict: "id" });
     if (repErr) throw new Error(`Landslide Reports seed error: ${repErr.message}`);
-    console.log("✅ Landslide Reports seeded (3 records)");
+    console.log("Landslide Reports seeded (3 records)");
 
     // 7. Seed Warnings (Active & Historical for Northern Hilly Farms)
     console.log("\n[7/11] Seeding Warnings...");
@@ -628,7 +628,7 @@ async function runSeed() {
     ];
     const { error: warnErr } = await supabase.from("warnings").upsert(warningsData, { onConflict: "id" });
     if (warnErr) throw new Error(`Warnings seed error: ${warnErr.message}`);
-    console.log("✅ Warnings seeded (3 records)");
+    console.log("Warnings seeded (3 records)");
 
     // 8. Seed Payments
     console.log("\n[8/11] Seeding Payments & Escrow Ledger...");
@@ -640,7 +640,7 @@ async function runSeed() {
     ];
     const { error: payErr } = await supabase.from("payments").upsert(paymentsData, { onConflict: "id" });
     if (payErr) throw new Error(`Payments seed error: ${payErr.message}`);
-    console.log("✅ Payments seeded (4 records)");
+    console.log("Payments seeded (4 records)");
 
     // 9. Seed Payment Transaction Logs
     console.log("\n[9/11] Seeding Payment Transaction Logs...");
@@ -654,7 +654,7 @@ async function runSeed() {
     ];
     const { error: txErr } = await supabase.from("payment_transaction_log").upsert(txData, { onConflict: "id" });
     if (txErr) throw new Error(`Payment Transaction Logs seed error: ${txErr.message}`);
-    console.log("✅ Payment Transaction Logs seeded (6 records)");
+    console.log("Payment Transaction Logs seeded (6 records)");
 
     // 10. Seed Booking Status Logs
     console.log("\n[10/11] Seeding Booking Status Logs...");
@@ -666,31 +666,31 @@ async function runSeed() {
     ];
     const { error: bStatErr } = await supabase.from("booking_status_log").upsert(bStatusData, { onConflict: "id" });
     if (bStatErr) throw new Error(`Booking Status Logs seed error: ${bStatErr.message}`);
-    console.log("✅ Booking Status Logs seeded (4 records)");
+    console.log("Booking Status Logs seeded (4 records)");
 
     // 11. Seed Notification Logs
     console.log("\n[11/11] Seeding Notification Logs...");
     const notifData = [
-      { id: 1, user_id: 3, warning_id: 1, related_booking_id: 3, notification_type: "Push", title: "⚠️ Hazard Alert: Joshimath Sector", message_content: "A verified mudslide debris flow was reported near Joshimath. Your booking ref AGS-47612 has been refunded under 100% Escrow Protection.", is_read: false, severity: "warning", dispatched_at: "2026-08-07T12:45:00.000Z" },
+      { id: 1, user_id: 3, warning_id: 1, related_booking_id: 3, notification_type: "Push", title: "Hazard Alert: Joshimath Sector", message_content: "A verified mudslide debris flow was reported near Joshimath. Your booking ref AGS-47612 has been refunded under 100% Escrow Protection.", is_read: false, severity: "warning", dispatched_at: "2026-08-07T12:45:00.000Z" },
       { id: 2, user_id: 1, warning_id: 2, related_booking_id: null, notification_type: "SMS", title: "Manual Warning Broadcast Active", message_content: "Your manual safety alert for Parashar hill slope has been broadcast across the regional safety network.", is_read: true, severity: "info", dispatched_at: "2026-08-06T09:35:00.000Z" },
       { id: 3, user_id: 2, warning_id: null, related_booking_id: 2, notification_type: "Push", title: "Escrow Payout Credited: ₹16,500", message_content: "Pooja Sharma's checkout at Naggar Heritage Apple Estate was completed. Funds released to your bank account.", is_read: true, severity: "info", dispatched_at: "2026-06-06T04:05:00.000Z" },
       { id: 4, user_id: 4, warning_id: null, related_booking_id: 4, notification_type: "Email", title: "Booking Confirmation & Escrow Hold", message_content: "Your reservation AGS-49102 at Sangla Valley Saffron & Almond Estate is confirmed and secured in escrow.", is_read: false, severity: "info", dispatched_at: "2026-08-10T14:32:00.000Z" },
     ];
     const { error: notifErr } = await supabase.from("notification_log").upsert(notifData, { onConflict: "id" });
     if (notifErr) throw new Error(`Notification Logs seed error: ${notifErr.message}`);
-    console.log("✅ Notification Logs seeded (4 records)");
+    console.log("Notification Logs seeded (4 records)");
 
     console.log("\n==================================================");
-    console.log("🎉 ALL NORTHERN HILLY SEED DATA SUCCESSFULLY SYNCED TO SUPABASE!");
+    console.log("ALL NORTHERN HILLY SEED DATA SUCCESSFULLY SYNCED TO SUPABASE!");
     console.log("==================================================");
-    console.log("👥 Seeded Accounts (Password: password123):");
+    console.log("Seeded Accounts (Password: password123):");
     console.log("  • Host 1: rohit.bisht@example.com (12 Uttarakhand & HP Farms)");
     console.log("  • Host 2: vikram.singh@example.com (12 Himachal & Uttarakhand Farms)");
     console.log("  • Guest 1: arjun.verma@example.com (Active / Refunded Bookings)");
     console.log("  • Guest 2: pooja.sharma@example.com (Confirmed / Completed Bookings)");
     console.log("==================================================");
   } catch (err: any) {
-    console.error("\n❌ SEEDING FAILED:", err.message);
+    console.error("\nSEEDING FAILED:", err.message);
     process.exit(1);
   }
 }
