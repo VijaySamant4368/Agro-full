@@ -176,6 +176,7 @@ export async function sendAdminPaymentEmail(details: {
   farmTitle: string;
   totalCharged: number;
   gatewayRef: string;
+  cab?: { pickupLocation: string; pincode: string };
 }): Promise<{ success: boolean; messageId?: string; simulated?: boolean } | null> {
   if (!ENV.ADMIN_EMAIL) {
     console.warn("[Email] ADMIN_EMAIL not set in .env — skipping admin payment notification.");
@@ -185,7 +186,21 @@ export async function sendAdminPaymentEmail(details: {
   const amount = formatINR(details.totalCharged);
   const escrowUrl = `${ENV.APP_URL}/escrow`;
 
-  const text = `Payment captured on AgroSafe Travel.\n\nBooking Ref: ${details.bookingCode}\nPayment Ref: ${details.paymentCode}\nFarm: ${details.farmTitle}\nHost: ${details.hostName}\nGuest: ${details.guestName} (${details.guestEmail})\nAmount Charged: ${amount}\nGateway Ref: ${details.gatewayRef}\n\nFunds are held in escrow pending stay completion.\n\nEscrow Ledger:\n${escrowUrl}`;
+  const cabText = details.cab
+    ? `\n\nCab Requested:\nPickup Location: ${details.cab.pickupLocation}\nPIN Code: ${details.cab.pincode}`
+    : "";
+
+  const text = `Payment captured on AgroSafe Travel.\n\nBooking Ref: ${details.bookingCode}\nPayment Ref: ${details.paymentCode}\nFarm: ${details.farmTitle}\nHost: ${details.hostName}\nGuest: ${details.guestName} (${details.guestEmail})\nAmount Charged: ${amount}\nGateway Ref: ${details.gatewayRef}${cabText}\n\nFunds are held in escrow pending stay completion.\n\nEscrow Ledger:\n${escrowUrl}`;
+
+  const cabHtml = details.cab
+    ? `
+      <p style="margin-top: 24px;"><strong>Cab Requested</strong></p>
+      <table class="detail-table">
+        <tr><td>Pickup Location</td><td>${details.cab.pickupLocation}</td></tr>
+        <tr><td>PIN Code</td><td>${details.cab.pincode}</td></tr>
+      </table>
+    `
+    : "";
 
   const html = emailShell(
     "Payment captured",
@@ -200,6 +215,7 @@ export async function sendAdminPaymentEmail(details: {
         <tr><td>Amount Charged</td><td>${amount}</td></tr>
         <tr><td>Gateway Ref</td><td>${details.gatewayRef}</td></tr>
       </table>
+      ${cabHtml}
       <div style="text-align: center;">
         <a href="${escrowUrl}" class="btn" target="_blank">Open Escrow Ledger</a>
       </div>
@@ -208,7 +224,7 @@ export async function sendAdminPaymentEmail(details: {
 
   return dispatchEmail({
     to: ENV.ADMIN_EMAIL,
-    subject: `Payment Captured: ${details.bookingCode} — ${amount}`,
+    subject: `Payment Captured: ${details.bookingCode}${details.cab ? " + Cab" : ""} — ${amount}`,
     text,
     html,
   });

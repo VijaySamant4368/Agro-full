@@ -1,7 +1,9 @@
-import { supabase, isLiveSupabaseConfigured, safeInsert } from "../config/supabase.js";
+import { supabase, safeInsert } from "../config/supabase.js";
 import { Farm, StaticGeoReference } from "../types/index.js";
 
-const mockGeoRefs: StaticGeoReference[] = [
+// Hardcoded default center coordinates, used when a farm has no GPS and the
+// static_geo_reference table has no match for its state/district/subdistrict.
+const DEFAULT_GEO_REFS: StaticGeoReference[] = [
   { id: 1, state: "Uttarakhand", district: "Nainital", subdistrict: "Ramgarh", center_latitude: 29.426, center_longitude: 79.552 },
   { id: 2, state: "Uttarakhand", district: "Nainital", subdistrict: "Bhimtal", center_latitude: 29.351, center_longitude: 79.554 },
   { id: 3, state: "Uttarakhand", district: "Chamoli", subdistrict: "Joshimath", center_latitude: 30.556, center_longitude: 79.563 },
@@ -11,27 +13,21 @@ const mockGeoRefs: StaticGeoReference[] = [
   { id: 7, state: "Arunachal Pradesh", district: "Lower Subansiri", subdistrict: "Ziro", center_latitude: 27.564, center_longitude: 93.834 },
 ];
 
-let mockFarms: Farm[] = [];
-
-export const findMockFarmById = (id: number) => mockFarms.find((f) => f.id === id);
-
 export const getGeoFallback = async (state: string, district: string, subdistrict?: string) => {
-  if (isLiveSupabaseConfigured()) {
-    let query = supabase
-      .from("static_geo_reference")
-      .select("*")
-      .ilike("state", state)
-      .ilike("district", district);
+  let query = supabase
+    .from("static_geo_reference")
+    .select("*")
+    .ilike("state", state)
+    .ilike("district", district);
 
-    if (subdistrict) {
-      query = query.ilike("subdistrict", subdistrict);
-    }
-
-    const { data } = await query.limit(1).maybeSingle();
-    if (data) return data;
+  if (subdistrict) {
+    query = query.ilike("subdistrict", subdistrict);
   }
 
-  const fallback = mockGeoRefs.find(
+  const { data } = await query.limit(1).maybeSingle();
+  if (data) return data;
+
+  const fallback = DEFAULT_GEO_REFS.find(
     (g) =>
       g.state.toLowerCase() === state.toLowerCase() &&
       g.district.toLowerCase() === district.toLowerCase() &&
@@ -48,43 +44,26 @@ export const listAllFarms = async (filters: {
   category?: string;
   host_id?: number;
 }) => {
-  if (isLiveSupabaseConfigured()) {
-    let query = supabase.from("farms").select("*, users(first_name, last_name, email, phone_number)");
-    if (filters.host_id) query = query.eq("host_id", filters.host_id);
-    if (filters.state) query = query.ilike("state", filters.state);
-    if (filters.district) query = query.ilike("district", filters.district);
-    if (filters.subdistrict) query = query.ilike("subdistrict", filters.subdistrict);
-    if (filters.category) query = query.eq("category", filters.category);
+  let query = supabase.from("farms").select("*, users(first_name, last_name, email, phone_number)");
+  if (filters.host_id) query = query.eq("host_id", filters.host_id);
+  if (filters.state) query = query.ilike("state", filters.state);
+  if (filters.district) query = query.ilike("district", filters.district);
+  if (filters.subdistrict) query = query.ilike("subdistrict", filters.subdistrict);
+  if (filters.category) query = query.eq("category", filters.category);
 
-    const { data, error } = await query;
-    if (error) throw new Error(error.message);
-    return data || [];
-  }
-
-  return mockFarms.filter((f) => {
-    if (filters.host_id && f.host_id !== filters.host_id) return false;
-    if (filters.state && f.state.toLowerCase() !== filters.state.toLowerCase()) return false;
-    if (filters.district && f.district.toLowerCase() !== filters.district.toLowerCase()) return false;
-    if (filters.subdistrict && f.subdistrict?.toLowerCase() !== filters.subdistrict.toLowerCase()) return false;
-    if (filters.category && f.category !== filters.category) return false;
-    return true;
-  });
+  const { data, error } = await query;
+  if (error) throw new Error(error.message);
+  return data || [];
 };
 
 export const getFarmBySlug = async (slug: string) => {
-  if (isLiveSupabaseConfigured()) {
-    const { data, error } = await supabase
-      .from("farms")
-      .select("*, users(id, first_name, last_name, email, phone_number)")
-      .eq("slug", slug)
-      .single();
-    if (error || !data) throw new Error("Farmstay not found");
-    return data;
-  }
-
-  const farm = mockFarms.find((f) => f.slug === slug);
-  if (!farm) throw new Error("Farmstay not found");
-  return farm;
+  const { data, error } = await supabase
+    .from("farms")
+    .select("*, users(id, first_name, last_name, email, phone_number)")
+    .eq("slug", slug)
+    .single();
+  if (error || !data) throw new Error("Farmstay not found");
+  return data;
 };
 
 export const createFarmListing = async (
@@ -140,18 +119,7 @@ export const createFarmListing = async (
     regional_guidelines: data.regional_guidelines,
   };
 
-  if (isLiveSupabaseConfigured()) {
-    const { data: newFarm, error } = await safeInsert<Farm>("farms", farmPayload);
-    if (error) throw new Error(error.message);
-    return newFarm;
-  }
-
-  const newFarm: Farm = {
-    id: mockFarms.length + 1,
-    ...farmPayload,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  };
-  mockFarms.push(newFarm);
+  const { data: newFarm, error } = await safeInsert<Farm>("farms", farmPayload);
+  if (error) throw new Error(error.message);
   return newFarm;
 };

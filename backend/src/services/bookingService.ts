@@ -1,11 +1,6 @@
-import { supabase, isLiveSupabaseConfigured, safeInsert } from "../config/supabase.js";
-import { Booking, BookingStatus, Payment, PaymentTransactionLog, BookingStatusLog } from "../types/index.js";
+import { supabase, safeInsert } from "../config/supabase.js";
 import { createNotification } from "./notificationService.js";
 import { sendHostBookingEmail, sendAdminPaymentEmail } from "./emailService.js";
-import { findMockFarmById } from "./farmService.js";
-import { findMockUserById } from "./authService.js";
-
-let mockBookings: any[] = [];
 
 // Notifies the host + admin that a booking/payment landed. Best-effort: must never fail the booking itself.
 async function dispatchBookingSideEffects(params: {
@@ -23,6 +18,7 @@ async function dispatchBookingSideEffects(params: {
   totalGuests: number;
   totalCharged: number;
   gatewayRef: string;
+  cab?: { pickupLocation: string; pincode: string };
 }) {
   const guestNoun = params.totalGuests > 1 ? "guests" : "guest";
 
@@ -56,6 +52,7 @@ async function dispatchBookingSideEffects(params: {
     farmTitle: params.farmTitle,
     totalCharged: params.totalCharged,
     gatewayRef: params.gatewayRef,
+    cab: params.cab,
   });
 }
 
@@ -66,9 +63,16 @@ export const createBookingWithEscrow = async (data: {
   stay_end_date: string;
   total_guests: number;
   gateway_ref?: string;
+  cab_pickup_location?: string;
+  cab_pincode?: string;
 }) => {
   const booking_code = `AGS-${Math.floor(Math.random() * 90000 + 10000)}`;
   const payment_code = `PAY-${Math.floor(Math.random() * 90000 + 10000)}`;
+
+  const cab =
+    data.cab_pickup_location && data.cab_pincode
+      ? { pickupLocation: data.cab_pickup_location, pincode: data.cab_pincode }
+      : undefined;
 
   // Calculate days and totals
   const start = new Date(data.stay_start_date);
@@ -76,133 +80,76 @@ export const createBookingWithEscrow = async (data: {
   const days = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
 
   let nightlyRate = 4500;
-  if (isLiveSupabaseConfigured()) {
-    const { data: farm } = await supabase.from("farms").select("nightly_rate").eq("id", data.farm_id).single();
-    if (farm) nightlyRate = farm.nightly_rate;
-  }
+  const { data: farmRate } = await supabase.from("farms").select("nightly_rate").eq("id", data.farm_id).single();
+  if (farmRate) nightlyRate = farmRate.nightly_rate;
 
   const stay_amount = nightlyRate * days;
   const platform_fee = Math.round(stay_amount * 0.05); // 5% platform fee
   const total_charged = stay_amount + platform_fee;
   const gateway_ref = data.gateway_ref || `rzp_live_${Math.floor(Math.random() * 900000000 + 100000000)}`;
 
-  if (isLiveSupabaseConfigured()) {
-    // 1. Insert Booking
-    const { data: booking, error: bErr } = await safeInsert<any>("bookings", {
-      booking_code,
-      guest_id: data.guest_id,
-      farm_id: data.farm_id,
-      stay_start_date: data.stay_start_date,
-      stay_end_date: data.stay_end_date,
-      total_guests: data.total_guests,
-      current_status: "Confirmed",
-    });
-
-    if (bErr || !booking) throw new Error(bErr?.message || "Failed to create booking");
-
-    // 2. Insert Payment & Lock in Escrow
-    const { data: payment, error: pErr } = await safeInsert<any>("payments", {
-      payment_code,
-      booking_id: booking.id,
-      stay_amount,
-      platform_fee,
-      total_charged,
-      escrow_status: "Held_In_Escrow",
-      gateway_ref,
-    });
-
-    if (pErr || !payment) throw new Error(pErr?.message || "Failed to record escrow payment");
-
-    // 3. Log initial transaction
-    await safeInsert("payment_transaction_log", {
-      payment_id: payment.id,
-      transaction_type: "Charge",
-      payment_gateway_ref: gateway_ref,
-      amount: total_charged,
-      note: "Initial booking charge authorized & funds locked in AgroSafe Escrow Vault.",
-    });
-
-    // 4. Log booking status transition
-    await safeInsert("booking_status_log", {
-      booking_id: booking.id,
-      previous_status: "Pending",
-      new_status: "Confirmed",
-      reason: "Escrow payment captured & verified",
-    });
-
-    // 5. Notify host + admin (best-effort, must not fail the booking)
-    try {
-      const { data: full } = await supabase
-        .from("bookings")
-        .select("*, farms(title, host_id, users(first_name, last_name, email)), users(first_name, last_name, email)")
-        .eq("id", booking.id)
-        .single();
-
-      if (full?.farms?.host_id) {
-        const host = full.farms.users;
-        const guest = full.users;
-        await dispatchBookingSideEffects({
-          bookingId: booking.id,
-          hostId: full.farms.host_id,
-          hostEmail: host?.email,
-          hostName: host?.first_name || "Host",
-          guestName: guest ? `${guest.first_name} ${guest.last_name}`.trim() : "A guest",
-          guestEmail: guest?.email,
-          farmTitle: full.farms.title,
-          bookingCode: booking_code,
-          paymentCode: payment_code,
-          stayStartDate: data.stay_start_date,
-          stayEndDate: data.stay_end_date,
-          totalGuests: data.total_guests,
-          totalCharged: total_charged,
-          gatewayRef: gateway_ref,
-        });
-      }
-    } catch (err: any) {
-      console.warn("[Booking] Failed to send booking notifications:", err.message);
-    }
-
-    return { booking, payment };
-  }
-
-  // Fallback in-memory
-  const newBooking = {
-    id: mockBookings.length + 1,
+  // 1. Insert Booking
+  const { data: booking, error: bErr } = await safeInsert<any>("bookings", {
     booking_code,
     guest_id: data.guest_id,
     farm_id: data.farm_id,
     stay_start_date: data.stay_start_date,
     stay_end_date: data.stay_end_date,
     total_guests: data.total_guests,
-    current_status: "Confirmed" as BookingStatus,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-    payments: {
-      payment_code,
-      stay_amount,
-      platform_fee,
-      total_charged,
-      escrow_status: "Held_In_Escrow",
-      gateway_ref,
-    },
-  };
-  mockBookings.push(newBooking);
+    current_status: "Confirmed",
+  });
 
-  // Notify host + admin (best-effort, must not fail the booking)
+  if (bErr || !booking) throw new Error(bErr?.message || "Failed to create booking");
+
+  // 2. Insert Payment & Lock in Escrow
+  const { data: payment, error: pErr } = await safeInsert<any>("payments", {
+    payment_code,
+    booking_id: booking.id,
+    stay_amount,
+    platform_fee,
+    total_charged,
+    escrow_status: "Held_In_Escrow",
+    gateway_ref,
+  });
+
+  if (pErr || !payment) throw new Error(pErr?.message || "Failed to record escrow payment");
+
+  // 3. Log initial transaction
+  await safeInsert("payment_transaction_log", {
+    payment_id: payment.id,
+    transaction_type: "Charge",
+    payment_gateway_ref: gateway_ref,
+    amount: total_charged,
+    note: "Initial booking charge authorized & funds locked in AgroSafe Escrow Vault.",
+  });
+
+  // 4. Log booking status transition
+  await safeInsert("booking_status_log", {
+    booking_id: booking.id,
+    previous_status: "Pending",
+    new_status: "Confirmed",
+    reason: "Escrow payment captured & verified",
+  });
+
+  // 5. Notify host + admin (best-effort, must not fail the booking)
   try {
-    const farm = findMockFarmById(data.farm_id);
-    const host = farm ? findMockUserById(farm.host_id) : undefined;
-    const guest = findMockUserById(data.guest_id);
+    const { data: full } = await supabase
+      .from("bookings")
+      .select("*, farms(title, host_id, users(first_name, last_name, email)), users(first_name, last_name, email)")
+      .eq("id", booking.id)
+      .single();
 
-    if (farm && host) {
+    if (full?.farms?.host_id) {
+      const host = full.farms.users;
+      const guest = full.users;
       await dispatchBookingSideEffects({
-        bookingId: newBooking.id,
-        hostId: host.id,
-        hostEmail: host.email,
-        hostName: host.first_name,
+        bookingId: booking.id,
+        hostId: full.farms.host_id,
+        hostEmail: host?.email,
+        hostName: host?.first_name || "Host",
         guestName: guest ? `${guest.first_name} ${guest.last_name}`.trim() : "A guest",
         guestEmail: guest?.email,
-        farmTitle: farm.title,
+        farmTitle: full.farms.title,
         bookingCode: booking_code,
         paymentCode: payment_code,
         stayStartDate: data.stay_start_date,
@@ -210,34 +157,28 @@ export const createBookingWithEscrow = async (data: {
         totalGuests: data.total_guests,
         totalCharged: total_charged,
         gatewayRef: gateway_ref,
+        cab,
       });
     }
   } catch (err: any) {
     console.warn("[Booking] Failed to send booking notifications:", err.message);
   }
 
-  return { booking: newBooking, payment: newBooking.payments };
+  return { booking, payment };
 };
 
 export const listBookings = async (userId?: number, role?: string) => {
-  if (isLiveSupabaseConfigured()) {
-    let query = supabase
-      .from("bookings")
-      .select("*, farms(*, users(first_name, last_name, email)), payments(*), users(first_name, last_name, email, phone_number)");
+  let query = supabase
+    .from("bookings")
+    .select("*, farms(*, users(first_name, last_name, email)), payments(*), users(first_name, last_name, email, phone_number)");
 
-    if (userId && role === "guest") {
-      query = query.eq("guest_id", userId);
-    } else if (userId && role === "host") {
-      query = query.eq("farms.host_id", userId);
-    }
-
-    const { data, error } = await query.order("created_at", { ascending: false });
-    if (error) throw new Error(error.message);
-    return data;
+  if (userId && role === "guest") {
+    query = query.eq("guest_id", userId);
+  } else if (userId && role === "host") {
+    query = query.eq("farms.host_id", userId);
   }
 
-  if (userId) {
-    return mockBookings.filter((b) => b.guest_id === userId);
-  }
-  return mockBookings;
+  const { data, error } = await query.order("created_at", { ascending: false });
+  if (error) throw new Error(error.message);
+  return data;
 };

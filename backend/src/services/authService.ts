@@ -1,70 +1,9 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { supabase, isLiveSupabaseConfigured, safeInsert } from "../config/supabase.js";
+import { supabase, safeInsert } from "../config/supabase.js";
 import { ENV } from "../config/env.js";
-import { User, UserType } from "../types/index.js";
+import { User } from "../types/index.js";
 import { sendVerificationEmail } from "./emailService.js";
-
-// In-memory mock storage fallback for local development if Supabase keys not set yet
-let mockUsers: User[] = [
-  {
-    id: 1,
-    user_type: "host",
-    first_name: "Rohit",
-    last_name: "Bisht",
-    email: "rohit.bisht@example.com",
-    password_hash: bcrypt.hashSync("password123", 10),
-    is_verified: true,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  },
-  {
-    id: 2,
-    user_type: "host",
-    first_name: "Vikram",
-    last_name: "Singh",
-    email: "vikram.singh@example.com",
-    password_hash: bcrypt.hashSync("password123", 10),
-    is_verified: true,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  },
-  {
-    id: 3,
-    user_type: "guest",
-    first_name: "Arjun",
-    last_name: "Verma",
-    email: "arjun.verma@example.com",
-    password_hash: bcrypt.hashSync("password123", 10),
-    is_verified: true,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  },
-  {
-    id: 4,
-    user_type: "guest",
-    first_name: "Pooja",
-    last_name: "Sharma",
-    email: "pooja.sharma@example.com",
-    password_hash: bcrypt.hashSync("password123", 10),
-    is_verified: true,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  },
-  {
-    id: 5,
-    user_type: "admin",
-    first_name: "Admin",
-    last_name: "Console",
-    email: "admin@agrosafe.com",
-    password_hash: bcrypt.hashSync("password123", 10),
-    is_verified: true,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  },
-];
-
-export const findMockUserById = (id: number) => mockUsers.find((u) => u.id === id);
 
 export function createVerificationToken(userId: number | string, email: string): string {
   return jwt.sign(
@@ -92,50 +31,26 @@ export const registerUser = async (data: {
   const lowerEmail = data.email.toLowerCase().trim();
   const password_hash = await bcrypt.hash(data.password, 10);
 
-  let createdUser: User | null = null;
+  const { data: createdUser, error } = await safeInsert<User>("users", {
+    user_type: data.user_type,
+    first_name: data.first_name.trim(),
+    last_name: data.last_name.trim(),
+    email: lowerEmail,
+    password_hash,
+    phone_number: data.phone_number?.trim() || null,
+    is_verified: false,
+  });
 
-  if (isLiveSupabaseConfigured()) {
-    const { data: newUser, error } = await safeInsert<User>("users", {
-      user_type: data.user_type,
-      first_name: data.first_name.trim(),
-      last_name: data.last_name.trim(),
-      email: lowerEmail,
-      password_hash,
-      phone_number: data.phone_number?.trim() || null,
-      is_verified: false,
-    });
-
-    if (error) {
-      console.error("[Supabase safeInsert error in register]:", error);
-      if (error.code === "23505" && String(error.message).includes("users_email")) {
-        throw new Error("Email already registered");
-      }
-      const rawMsg = String(error.message || "");
-      const cleanMsg = rawMsg.includes("<html") || rawMsg.includes("<!DOCTYPE")
-        ? "Database connection failed. Please verify Supabase credentials in .env."
-        : rawMsg || "Failed to register user in database";
-      throw new Error(cleanMsg);
+  if (error) {
+    console.error("[Supabase safeInsert error in register]:", error);
+    if (error.code === "23505" && String(error.message).includes("users_email")) {
+      throw new Error("Email already registered");
     }
-
-    createdUser = newUser;
-  } else {
-    // Fallback in-memory
-    const existing = mockUsers.find((u) => u.email === lowerEmail);
-    if (existing) throw new Error("Email already registered");
-
-    createdUser = {
-      id: mockUsers.length + 1,
-      user_type: data.user_type,
-      first_name: data.first_name.trim(),
-      last_name: data.last_name.trim(),
-      email: lowerEmail,
-      password_hash,
-      phone_number: data.phone_number?.trim(),
-      is_verified: false,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
-    mockUsers.push(createdUser);
+    const rawMsg = String(error.message || "");
+    const cleanMsg = rawMsg.includes("<html") || rawMsg.includes("<!DOCTYPE")
+      ? "Database connection failed. Please verify Supabase credentials in .env."
+      : rawMsg || "Failed to register user in database";
+    throw new Error(cleanMsg);
   }
 
   if (!createdUser) throw new Error("Could not create user account");
@@ -179,60 +94,32 @@ export const verifyUserEmail = async (token: string) => {
 
   const lowerEmail = String(decoded.email).toLowerCase();
 
-  if (isLiveSupabaseConfigured()) {
-    const { data: updated, error } = await supabase
-      .from("users")
-      .update({ is_verified: true, updated_at: new Date().toISOString() })
-      .eq("email", lowerEmail)
-      .select("id, email, first_name, last_name, user_type, is_verified")
-      .single();
+  const { data: updated, error } = await supabase
+    .from("users")
+    .update({ is_verified: true, updated_at: new Date().toISOString() })
+    .eq("email", lowerEmail)
+    .select("id, email, first_name, last_name, user_type, is_verified")
+    .single();
 
-    if (error || !updated) {
-      throw new Error("User account not found or could not be verified.");
-    }
-
-    return {
-      success: true,
-      message: "Email address verified successfully! You can now log in.",
-      user: updated,
-    };
+  if (error || !updated) {
+    throw new Error("User account not found or could not be verified.");
   }
-
-  // Memory fallback
-  const user = mockUsers.find((u) => u.email === lowerEmail);
-  if (!user) throw new Error("User not found.");
-
-  user.is_verified = true;
-  user.updated_at = new Date().toISOString();
 
   return {
     success: true,
     message: "Email address verified successfully! You can now log in.",
-    user: {
-      id: user.id,
-      email: user.email,
-      first_name: user.first_name,
-      last_name: user.last_name,
-      user_type: user.user_type,
-      is_verified: true,
-    },
+    user: updated,
   };
 };
 
 export const resendUserVerification = async (email: string) => {
   const lowerEmail = email.toLowerCase().trim();
-  let user: User | null = null;
 
-  if (isLiveSupabaseConfigured()) {
-    const { data: dbUser } = await supabase
-      .from("users")
-      .select("*")
-      .eq("email", lowerEmail)
-      .single();
-    if (dbUser) user = dbUser;
-  } else {
-    user = mockUsers.find((u) => u.email === lowerEmail) || null;
-  }
+  const { data: user } = await supabase
+    .from("users")
+    .select("*")
+    .eq("email", lowerEmail)
+    .single();
 
   if (!user) {
     throw new Error("No account found with this email address.");
@@ -256,31 +143,15 @@ export const resendUserVerification = async (email: string) => {
 };
 
 export const loginUser = async (data: { email: string; password: string }) => {
-  let user: User | null = null;
   const lowerEmail = data.email.toLowerCase().trim();
 
-  if (isLiveSupabaseConfigured()) {
-    try {
-      const { data: dbUser } = await supabase
-        .from("users")
-        .select("*")
-        .eq("email", lowerEmail)
-        .single();
+  const { data: user, error } = await supabase
+    .from("users")
+    .select("*")
+    .eq("email", lowerEmail)
+    .single();
 
-      if (dbUser) {
-        user = dbUser;
-      }
-    } catch (err) {
-      console.warn("Supabase user query failed, falling back to memory store:", err);
-    }
-  }
-
-  // Fallback to in-memory users if not in Supabase
-  if (!user) {
-    user = mockUsers.find((u) => u.email === lowerEmail) || null;
-  }
-
-  if (!user) throw new Error("Invalid email or password");
+  if (error || !user) throw new Error("Invalid email or password");
 
   const match = await bcrypt.compare(data.password, user.password_hash);
   if (!match) throw new Error("Invalid email or password");

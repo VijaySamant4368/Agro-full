@@ -18,7 +18,7 @@ apiRouter.get("/ping", (req, res) => {
     timestamp: new Date().toISOString(),
     status: "online",
     service: "agrosafe-backend",
-    database: isLiveSupabaseConfigured() ? "connected" : "mock_mode",
+    database: isLiveSupabaseConfigured() ? "connected" : "misconfigured",
   });
 });
 

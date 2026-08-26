@@ -1,5 +1,4 @@
-import { supabase, isLiveSupabaseConfigured, safeInsert } from "../config/supabase.js";
-import { Warning, LandslideReport } from "../types/index.js";
+import { supabase, safeInsert } from "../config/supabase.js";
 
 export const haversineDistanceKm = (
   lat1: number,
@@ -20,20 +19,14 @@ export const haversineDistanceKm = (
   return R * c;
 };
 
-let mockWarnings: any[] = [];
-let mockReports: any[] = [];
-
 export const listAllReports = async () => {
-  if (isLiveSupabaseConfigured()) {
-    const { data, error } = await supabase
-      .from("landslide_reports")
-      .select("*, users(first_name, last_name, email)")
-      .order("report_time", { ascending: false });
+  const { data, error } = await supabase
+    .from("landslide_reports")
+    .select("*, users(first_name, last_name, email)")
+    .order("report_time", { ascending: false });
 
-    if (error) throw new Error(error.message);
-    return data || [];
-  }
-  return mockReports;
+  if (error) throw new Error(error.message);
+  return data || [];
 };
 
 export const processLandslideReportWithCNN = async (
@@ -54,69 +47,29 @@ export const processLandslideReportWithCNN = async (
   const processing_status = isHazardVerified ? "Processed" : "Rejected";
   const severity = confidenceScore >= 0.9 ? "Critical" : confidenceScore >= 0.8 ? "High" : "Medium";
 
-  if (isLiveSupabaseConfigured()) {
-    // 1. Save Landslide Report
-    const { data: report, error } = await safeInsert<any>("landslide_reports", {
-      report_code,
-      uploaded_by_user_id: userId,
-      image_s3_url: data.image_s3_url,
-      latitude: data.latitude,
-      longitude: data.longitude,
-      location_name: data.location_name || "Regional Mountain Approach",
-      details: data.details,
-      cnn_confidence_score: confidenceScore,
-      processing_status,
-      severity,
-    });
-
-    if (error || !report) throw new Error(error?.message || "Failed to record report");
-
-    // 2. If CNN confidence is verified, automatically generate Active Warning in Warnings DB (CFD Warnings Flow)
-    let autoWarning = null;
-    if (isHazardVerified) {
-      const warning_code = `WRN-AUTO-${Math.floor(Math.random() * 9000 + 1000)}`;
-      const { data: warning } = await safeInsert<any>("warnings", {
-        warning_code,
-        warning_source: "Automated_CNN",
-        report_id: report.id,
-        title: `Automated Landslide Debris Alert (${data.location_name || "Highway Sector"})`,
-        description: data.details || "CNN automated vision classified active slope movement. Route caution advised.",
-        severity,
-        epicenter_lat: data.latitude,
-        epicenter_lng: data.longitude,
-        impact_radius_km: 15.0,
-        issued_at: new Date().toISOString(),
-        expires_at: new Date(Date.now() + 48 * 3600 * 1000).toISOString(),
-        status: "Active",
-      });
-      autoWarning = warning;
-    }
-
-    return { report, confidenceScore, isHazardVerified, autoWarning };
-  }
-
-  // In-memory fallback
-  const report = {
-    id: Date.now(),
+  // 1. Save Landslide Report
+  const { data: report, error } = await safeInsert<any>("landslide_reports", {
     report_code,
     uploaded_by_user_id: userId,
     image_s3_url: data.image_s3_url,
     latitude: data.latitude,
     longitude: data.longitude,
-    location_name: data.location_name,
+    location_name: data.location_name || "Regional Mountain Approach",
     details: data.details,
     cnn_confidence_score: confidenceScore,
     processing_status,
     severity,
-    report_time: new Date().toISOString(),
-  };
+  });
 
+  if (error || !report) throw new Error(error?.message || "Failed to record report");
+
+  // 2. If CNN confidence is verified, automatically generate Active Warning in Warnings DB (CFD Warnings Flow)
   let autoWarning = null;
   if (isHazardVerified) {
-    autoWarning = {
-      id: mockWarnings.length + 1,
-      warning_code: `WRN-AUTO-${Math.floor(Math.random() * 9000 + 1000)}`,
-      warning_source: "Automated_CNN" as const,
+    const warning_code = `WRN-AUTO-${Math.floor(Math.random() * 9000 + 1000)}`;
+    const { data: warning } = await safeInsert<any>("warnings", {
+      warning_code,
+      warning_source: "Automated_CNN",
       report_id: report.id,
       title: `Automated Landslide Debris Alert (${data.location_name || "Highway Sector"})`,
       description: data.details || "CNN automated vision classified active slope movement. Route caution advised.",
@@ -126,9 +79,9 @@ export const processLandslideReportWithCNN = async (
       impact_radius_km: 15.0,
       issued_at: new Date().toISOString(),
       expires_at: new Date(Date.now() + 48 * 3600 * 1000).toISOString(),
-      status: "Active" as const,
-    };
-    mockWarnings.push(autoWarning);
+      status: "Active",
+    });
+    autoWarning = warning;
   }
 
   return { report, confidenceScore, isHazardVerified, autoWarning };
@@ -151,31 +104,9 @@ export const issueHostManualWarning = async (
   const hours = data.duration_hours || 48;
   const expires_at = new Date(Date.now() + hours * 3600 * 1000).toISOString();
 
-  if (isLiveSupabaseConfigured()) {
-    const { data: warning, error } = await safeInsert<any>("warnings", {
-      warning_code,
-      warning_source: "Manual_Host",
-      farm_id: data.farm_id,
-      host_id: hostId,
-      title: data.title,
-      description: data.description,
-      severity: data.severity,
-      epicenter_lat: data.epicenter_lat,
-      epicenter_lng: data.epicenter_lng,
-      impact_radius_km: data.impact_radius_km,
-      issued_at: new Date().toISOString(),
-      expires_at,
-      status: "Active",
-    });
-
-    if (error || !warning) throw new Error(error?.message || "Failed to broadcast warning");
-    return warning;
-  }
-
-  const warning = {
-    id: mockWarnings.length + 1,
+  const { data: warning, error } = await safeInsert<any>("warnings", {
     warning_code,
-    warning_source: "Manual_Host" as const,
+    warning_source: "Manual_Host",
     farm_id: data.farm_id,
     host_id: hostId,
     title: data.title,
@@ -186,41 +117,30 @@ export const issueHostManualWarning = async (
     impact_radius_km: data.impact_radius_km,
     issued_at: new Date().toISOString(),
     expires_at,
-    status: "Active" as const,
-  };
-  mockWarnings.push(warning);
+    status: "Active",
+  });
+
+  if (error || !warning) throw new Error(error?.message || "Failed to broadcast warning");
   return warning;
 };
 
 export const listAllWarnings = async (status?: string) => {
-  if (isLiveSupabaseConfigured()) {
-    let query = supabase.from("warnings").select("*, farms(title, slug), users(first_name, last_name, email)");
-    if (status && status !== "all") {
-      query = query.eq("status", status);
-    }
-    const { data, error } = await query.order("issued_at", { ascending: false });
-    if (error) throw new Error(error.message);
-    return data;
+  let query = supabase.from("warnings").select("*, farms(title, slug), users(first_name, last_name, email)");
+  if (status && status !== "all") {
+    query = query.eq("status", status);
   }
-
-  return mockWarnings.filter((w) => !status || status === "all" || w.status === status);
+  const { data, error } = await query.order("issued_at", { ascending: false });
+  if (error) throw new Error(error.message);
+  return data;
 };
 
 export const revokeWarning = async (warningId: string | number) => {
-  if (isLiveSupabaseConfigured()) {
-    const { data, error } = await supabase
-      .from("warnings")
-      .update({ status: "Revoked" })
-      .or(`id.eq.${warningId},warning_code.eq.${warningId}`)
-      .select()
-      .single();
-    if (error) throw new Error(error.message);
-    return data;
-  }
-
-  const item = mockWarnings.find((w) => String(w.id) === String(warningId) || w.warning_code === String(warningId));
-  if (item) {
-    item.status = "Revoked";
-  }
-  return item || { id: warningId, status: "Revoked" };
+  const { data, error } = await supabase
+    .from("warnings")
+    .update({ status: "Revoked" })
+    .or(`id.eq.${warningId},warning_code.eq.${warningId}`)
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return data;
 };

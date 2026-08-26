@@ -4,7 +4,7 @@ import { AuthenticatedRequest } from "../middleware/auth.js";
 
 export const createBooking = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   const guest_id = req.user?.id || 7; // Default guest Arjun if unauthenticated demo
-  const { farm_id, stay_start_date, stay_end_date, total_guests, gateway_ref } = req.body;
+  const { farm_id, stay_start_date, stay_end_date, total_guests, gateway_ref, cab_pickup_location, cab_pincode } = req.body;
 
   if (!farm_id || !stay_start_date || !stay_end_date) {
     res.status(400).json({ success: false, error: "farm_id, stay_start_date, and stay_end_date are required" });
@@ -18,6 +18,8 @@ export const createBooking = async (req: AuthenticatedRequest, res: Response): P
     stay_end_date,
     total_guests: total_guests || 1,
     gateway_ref,
+    cab_pickup_location,
+    cab_pincode,
   });
 
   res.status(201).json({ success: true, data: result });

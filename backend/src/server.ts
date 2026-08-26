@@ -59,7 +59,7 @@ const pingHandler = (req: express.Request, res: express.Response) => {
     timestamp: new Date().toISOString(),
     status: "online",
     service: "agrosafe-backend",
-    database: isLiveSupabaseConfigured() ? "connected" : "mock_mode",
+    database: isLiveSupabaseConfigured() ? "connected" : "misconfigured",
   });
 };
 
@@ -97,7 +97,7 @@ if (!process.env.VERCEL && process.env.NODE_ENV !== "test") {
   app.listen(ENV.PORT, () => {
     console.log(`====================================================`);
     console.log(`AgroSafe Backend Server running on port ${ENV.PORT}`);
-    console.log(`Supabase DB Integration: ${isLiveSupabaseConfigured() ? "Connected (Live)" : "Local Mock Storage"}`);
+    console.log(`Supabase DB Integration: ${isLiveSupabaseConfigured() ? "Connected" : "NOT CONFIGURED — check .env"}`);
     console.log(`Base API URL: http://localhost:${ENV.PORT}/api`);
     console.log(`====================================================`);
   });
