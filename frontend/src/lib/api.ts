@@ -361,6 +361,41 @@ export const api = {
     },
   },
 
+  // 2b. Payments (Razorpay)
+  payments: {
+    async createOrder(payload: {
+      farm_id: number;
+      stay_start_date: string;
+      stay_end_date: string;
+    }): Promise<{
+      success: boolean;
+      data?: { order_id: string; amount: number; currency: string; key_id: string; quote: any };
+      error?: string;
+    }> {
+      return await request<any>("/payments/razorpay/order", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+    },
+
+    async verify(payload: {
+      razorpay_order_id: string;
+      razorpay_payment_id: string;
+      razorpay_signature: string;
+      farm_id: number;
+      stay_start_date: string;
+      stay_end_date: string;
+      total_guests: number;
+      cab_pickup_location?: string;
+      cab_pincode?: string;
+    }): Promise<{ success: boolean; data?: any; error?: string }> {
+      return await request<any>("/payments/razorpay/verify", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+    },
+  },
+
   // 3. Escrow
   escrow: {
     async list(): Promise<PaymentEscrow[]> {

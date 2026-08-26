@@ -2,6 +2,30 @@ import { supabase, safeInsert } from "../config/supabase.js";
 import { createNotification } from "./notificationService.js";
 import { sendHostBookingEmail, sendAdminPaymentEmail } from "./emailService.js";
 
+const PLATFORM_FEE_RATE = 0.05;
+const DEFAULT_NIGHTLY_RATE = 4500;
+
+/** Server-computed quote — never trust a client-supplied amount for what gets charged. */
+export const computeBookingQuote = async (
+  farm_id: number,
+  stay_start_date: string,
+  stay_end_date: string
+) => {
+  const start = new Date(stay_start_date);
+  const end = new Date(stay_end_date);
+  const nights = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
+
+  let nightlyRate = DEFAULT_NIGHTLY_RATE;
+  const { data: farmRate } = await supabase.from("farms").select("nightly_rate").eq("id", farm_id).single();
+  if (farmRate) nightlyRate = farmRate.nightly_rate;
+
+  const stay_amount = nightlyRate * nights;
+  const platform_fee = Math.round(stay_amount * PLATFORM_FEE_RATE);
+  const total_charged = stay_amount + platform_fee;
+
+  return { nights, nightlyRate, stay_amount, platform_fee, total_charged };
+};
+
 // Notifies the host + admin that a booking/payment landed. Best-effort: must never fail the booking itself.
 async function dispatchBookingSideEffects(params: {
   bookingId: number;
@@ -63,6 +87,7 @@ export const createBookingWithEscrow = async (data: {
   stay_end_date: string;
   total_guests: number;
   gateway_ref?: string;
+  razorpay_order_id?: string;
   cab_pickup_location?: string;
   cab_pincode?: string;
 }) => {
@@ -74,18 +99,12 @@ export const createBookingWithEscrow = async (data: {
       ? { pickupLocation: data.cab_pickup_location, pincode: data.cab_pincode }
       : undefined;
 
-  // Calculate days and totals
-  const start = new Date(data.stay_start_date);
-  const end = new Date(data.stay_end_date);
-  const days = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
+  const { stay_amount, platform_fee, total_charged } = await computeBookingQuote(
+    data.farm_id,
+    data.stay_start_date,
+    data.stay_end_date
+  );
 
-  let nightlyRate = 4500;
-  const { data: farmRate } = await supabase.from("farms").select("nightly_rate").eq("id", data.farm_id).single();
-  if (farmRate) nightlyRate = farmRate.nightly_rate;
-
-  const stay_amount = nightlyRate * days;
-  const platform_fee = Math.round(stay_amount * 0.05); // 5% platform fee
-  const total_charged = stay_amount + platform_fee;
   const gateway_ref = data.gateway_ref || `rzp_live_${Math.floor(Math.random() * 900000000 + 100000000)}`;
 
   // 1. Insert Booking
@@ -110,6 +129,7 @@ export const createBookingWithEscrow = async (data: {
     total_charged,
     escrow_status: "Held_In_Escrow",
     gateway_ref,
+    razorpay_order_id: data.razorpay_order_id || null,
   });
 
   if (pErr || !payment) throw new Error(pErr?.message || "Failed to record escrow payment");

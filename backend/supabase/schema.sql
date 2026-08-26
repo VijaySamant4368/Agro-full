@@ -194,6 +194,7 @@ CREATE TABLE payments (
     escrow_status IN ('Awaiting_Funds', 'Held_In_Escrow', 'Released_To_Host', 'Refunded_To_Guest')
   ) DEFAULT 'Held_In_Escrow',
   gateway_ref VARCHAR(100),
+  razorpay_order_id VARCHAR(100),
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );

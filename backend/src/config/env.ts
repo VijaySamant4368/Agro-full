@@ -44,4 +44,8 @@ export const ENV = {
 
   // Admin notification recipient (payment alerts)
   ADMIN_EMAIL: process.env.ADMIN_EMAIL || "",
+
+  // Razorpay (test/trial mode)
+  RAZORPAY_KEY_ID: process.env.RAZORPAY_KEY_ID || "",
+  RAZORPAY_KEY_SECRET: process.env.RAZORPAY_KEY_SECRET || "",
 };

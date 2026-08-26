@@ -83,7 +83,14 @@ export const authRateLimiter = createRateLimiter({
   message: "Too many authentication attempts. Please wait a few minutes before trying again.",
 });
 
-// 2. Email Resend Limiter: 3 requests per 10 minutes per IP/Email
+// 2. Payment Limiter (Razorpay order/verify): 20 requests per 15 minutes per IP
+export const paymentRateLimiter = createRateLimiter({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  message: "Too many payment attempts. Please wait a few minutes before trying again.",
+});
+
+// 3. Email Resend Limiter: 3 requests per 10 minutes per IP/Email
 export const emailRateLimiter = createRateLimiter({
   windowMs: 10 * 60 * 1000,
   max: 3,
