@@ -15,6 +15,14 @@ interface MediaSlide {
 }
 
 const DEFAULT_SLIDES: MediaSlide[] = [
+    {
+    id: "hero-video-main",
+    type: "video",
+    src: "/hero/main.mp4",
+    stockVideoSrc: "/hero/video.mp4",
+    fallbackSrc: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=2000&auto=format&fit=crop",
+    alt: "Showing Agrotourism in India",
+  },
   {
     id: "hero-video-1",
     type: "video",
