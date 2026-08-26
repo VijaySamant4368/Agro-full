@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Building2, CheckCircle2, CreditCard, Globe, Lock, ShieldCheck } from "lucide-react";
+import { Building2, Car, CheckCircle2, CreditCard, Globe, Lock, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/field";
 import { api } from "@/lib/api";
@@ -39,6 +39,9 @@ export function PaymentForm({ total, farmId, checkIn, checkOut, guests }: Paymen
   const [card, setCard] = useState({ number: "", expiry: "", cvv: "", name: "" });
   const [upi, setUpi] = useState("");
   const [bank, setBank] = useState(BANKS[0]);
+  const [bookCab, setBookCab] = useState(false);
+  const [cabLocation, setCabLocation] = useState("");
+  const [cabPincode, setCabPincode] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [paid, setPaid] = useState(false);
@@ -55,6 +58,10 @@ export function PaymentForm({ total, farmId, checkIn, checkOut, guests }: Paymen
     }
     if (method === "upi" && !/^[\w.-]{2,}@[a-z]{2,}$/i.test(upi)) {
       return "Enter a valid UPI ID, e.g. name@okhdfcbank.";
+    }
+    if (bookCab) {
+      if (!cabLocation.trim()) return "Enter a pickup location for the cab.";
+      if (!/^\d{6}$/.test(cabPincode)) return "Enter a valid 6-digit PIN code for the cab pickup.";
     }
     return "";
   }
@@ -77,6 +84,7 @@ export function PaymentForm({ total, farmId, checkIn, checkOut, guests }: Paymen
         stay_end_date: checkOut || "2026-09-18",
         total_guests: guests || 2,
         gateway_ref: gatewayRef,
+        ...(bookCab ? { cab_pickup_location: cabLocation.trim(), cab_pincode: cabPincode } : {}),
       });
 
       if (!res.success) {
@@ -104,6 +112,7 @@ export function PaymentForm({ total, farmId, checkIn, checkOut, guests }: Paymen
         <p className="mx-auto mt-2 max-w-md text-ink-muted">
           {formatINR(total)} is secured{bookingRef ? ` for Booking ${bookingRef}` : ""}. It is released to the host 24 hours after your successful
           check-in. A confirmation has been sent to your registered email.
+          {bookCab ? " Your cab request has been forwarded — we'll confirm pickup details separately." : ""}
         </p>
       </div>
     );
@@ -240,6 +249,56 @@ export function PaymentForm({ total, farmId, checkIn, checkOut, guests }: Paymen
               ))}
             </div>
           </fieldset>
+        ) : null}
+      </div>
+
+      <div className="mt-6 rounded-lg border border-line bg-surface p-5 sm:p-7">
+        <label className="flex cursor-pointer items-start gap-3">
+          <input
+            type="checkbox"
+            checked={bookCab}
+            onChange={(e) => {
+              setBookCab(e.target.checked);
+              setError("");
+            }}
+            className="mt-0.5 accent-brand-700"
+          />
+          <span>
+            <span className="flex items-center gap-1.5 text-sm font-semibold">
+              <Car size={16} aria-hidden />
+              Book a cab for pickup
+            </span>
+            <span className="text-xs text-ink-muted">
+              We&apos;ll arrange a cab to meet you at your location. Requested separately from the stay.
+            </span>
+          </span>
+        </label>
+
+        {bookCab ? (
+          <div className="mt-5 grid gap-5 sm:grid-cols-2">
+            <Field label="Pickup Location">
+              {(id) => (
+                <Input
+                  id={id}
+                  placeholder="Dehradun Railway Station"
+                  value={cabLocation}
+                  onChange={(e) => setCabLocation(e.target.value)}
+                />
+              )}
+            </Field>
+
+            <Field label="PIN Code">
+              {(id) => (
+                <Input
+                  id={id}
+                  inputMode="numeric"
+                  placeholder="248001"
+                  value={cabPincode}
+                  onChange={(e) => setCabPincode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                />
+              )}
+            </Field>
+          </div>
         ) : null}
       </div>
 

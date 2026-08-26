@@ -504,18 +504,6 @@ export function AuthCard({ initialRole = "guest" }: { initialRole?: string }) {
                 />
                 Keep me signed in
               </label>
-              {role === "admin" && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setForm({ ...form, email: "admin@agrosafe.com", password: "password123" });
-                    toast.info("Prefilled Admin Demo credentials", "Quick Fill");
-                  }}
-                  className="text-xs font-semibold text-brand-700 hover:underline cursor-pointer"
-                >
-                  Fill Demo Admin
-                </button>
-              )}
             </div>
           )}
 

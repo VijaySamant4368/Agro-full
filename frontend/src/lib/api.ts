@@ -350,6 +350,8 @@ export const api = {
       stay_end_date: string;
       total_guests: number;
       gateway_ref?: string;
+      cab_pickup_location?: string;
+      cab_pincode?: string;
     }): Promise<{ success: boolean; data?: any; error?: string }> {
       const res = await request<any>("/bookings", {
         method: "POST",
