@@ -23,7 +23,7 @@ type Role = "guest" | "host" | "admin";
 export function AuthCard({ initialRole = "guest" }: { initialRole?: string }) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { login, register } = useAuth();
+  const { login, register, logout } = useAuth();
 
   // Role can come from props or search param query
   const queryRole = searchParams.get("role");
@@ -100,6 +100,21 @@ export function AuthCard({ initialRole = "guest" }: { initialRole?: string }) {
   const set = (key: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm({ ...form, [key]: e.target.value });
 
+  // Never let a stale ?redirect= param send someone into a portal their account
+  // doesn't belong to (e.g. a farmer bounced off /admin earlier, then logging
+  // in as a host from that same tab).
+  function redirectTargetFor(userType: Role | string, requested: string | null) {
+    const home = userType === "admin" ? "/admin" : userType === "host" ? "/host" : "/";
+    if (!requested) return home;
+    if (requested.startsWith("/admin") && userType !== "admin") return home;
+    if (requested.startsWith("/host") && userType !== "host") return home;
+    return requested;
+  }
+
+  function roleLabel(r: string) {
+    return r === "admin" ? "Admin" : r === "host" ? "Farm Host" : "Traveler";
+  }
+
   function validate() {
     if (!form.email.trim()) {
       return "Please enter your email address.";
@@ -154,11 +169,21 @@ export function AuthCard({ initialRole = "guest" }: { initialRole?: string }) {
           toast.error(errMsg, "Sign In Failed");
           return;
         }
+
+        // Account is real, but not for the portal the user picked (Traveler/Host/Admin
+        // tab). Reject at the UI boundary — don't let a guest end up inside /host, etc.
+        const actualType = res.user?.user_type;
+        if (actualType && actualType !== role) {
+          logout();
+          const errMsg = `This account is registered as ${roleLabel(actualType)}. Please use the ${roleLabel(actualType)} login section.`;
+          setError(errMsg);
+          toast.error(errMsg, "Wrong Login Section");
+          return;
+        }
+
         toast.success(`Welcome back, ${res.user?.first_name || "User"}!`, "Signed In");
         setDone(true);
-        const target =
-          searchParams.get("redirect") ||
-          (res.user?.user_type === "admin" ? "/admin" : res.user?.user_type === "host" ? "/host" : "/");
+        const target = redirectTargetFor(actualType || role, searchParams.get("redirect"));
         setTimeout(() => router.push(target), 800);
       } else {
         const parts = form.name.trim().split(" ");
@@ -188,9 +213,7 @@ export function AuthCard({ initialRole = "guest" }: { initialRole?: string }) {
 
         toast.success(`Account created successfully! Welcome to AgroSafe.`, "Registration Complete");
         setDone(true);
-        const target =
-          searchParams.get("redirect") ||
-          (res.user?.user_type === "admin" ? "/admin" : res.user?.user_type === "host" ? "/host" : "/");
+        const target = redirectTargetFor(res.user?.user_type || role, searchParams.get("redirect"));
         setTimeout(() => router.push(target), 800);
       }
     } catch (err: any) {

@@ -46,32 +46,37 @@ export function AuthGuard({ children }: AuthGuardProps) {
     }
 
     // Authenticated user checks
+    const homeFor = isAdmin ? "/admin" : isHost ? "/host" : "/";
+
     if (isLoginPage) {
       const redirectUrl = searchParams.get("redirect");
-      if (redirectUrl) {
-        router.replace(redirectUrl);
-      } else if (isAdmin) {
-        router.replace("/admin");
-      } else if (isHost) {
-        router.replace("/host");
-      } else {
-        router.replace("/");
-      }
+      // A stale ?redirect= (e.g. left over from an earlier bounce off /admin)
+      // must never send this user into a portal their role doesn't own.
+      const redirectBlocked =
+        !redirectUrl ||
+        (redirectUrl.startsWith("/admin") && !isAdmin) ||
+        (redirectUrl.startsWith("/host") && !isHost);
+      router.replace(redirectBlocked ? homeFor : redirectUrl!);
       return;
     }
 
     // Role-based route protection
-    // Only hosts can access /host and /host/*
-    if (pathname.startsWith("/host") && !isHost) {
+    if (pathname.startsWith("/admin") && !isAdmin) {
+      setDeniedRoleMessage("Access restricted: This area requires an authenticated Admin account.");
+      const timer = setTimeout(() => {
+        router.replace(homeFor);
+      }, 2000);
+      return () => clearTimeout(timer);
+    } else if (pathname.startsWith("/host") && !isHost) {
       setDeniedRoleMessage("Access restricted: This area requires an authenticated Farm Host account.");
       const timer = setTimeout(() => {
-        router.replace("/");
+        router.replace(homeFor);
       }, 2000);
       return () => clearTimeout(timer);
     } else {
       setDeniedRoleMessage(null);
     }
-  }, [isLoading, isAuthenticated, isHost, pathname, searchParams, router, isProtectedRoute, isLoginPage]);
+  }, [isLoading, isAuthenticated, isHost, isAdmin, pathname, searchParams, router, isProtectedRoute, isLoginPage]);
 
   // Loading state while checking token - only block rendering for strictly protected routes
   if (isLoading && isProtectedRoute) {
