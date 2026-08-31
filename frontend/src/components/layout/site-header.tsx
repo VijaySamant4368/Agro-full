@@ -26,7 +26,7 @@ type NavItem = {
 
 // Base Navigation for all general users
 const BASE_NAV: NavItem[] = [
-  { href: "/", label: "Browse" },
+  { href: "/", label: "Home" },
   { href: "/report", label: "Report Landslide" },
   { href: "/live", label: "Live Landslides" },
   { href: "/matrix", label: "Safety Matrix" },

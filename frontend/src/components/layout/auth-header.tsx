@@ -7,7 +7,7 @@ import { Menu, ShieldCheck, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const NAV = [
-  { href: "/", label: "Browse" },
+  { href: "/", label: "Home" },
   { href: "/report", label: "Report Landslide" },
   { href: "/live", label: "Live Landslides" },
   { href: "/matrix", label: "Safety Matrix" },
