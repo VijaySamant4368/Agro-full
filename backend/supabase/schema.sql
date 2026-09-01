@@ -92,6 +92,7 @@ CREATE TABLE farms (
   longitude DECIMAL(9,6),
   uses_fallback_coords BOOLEAN DEFAULT TRUE,
   nightly_rate DECIMAL(10,2) NOT NULL CHECK (nightly_rate > 0),
+  max_guests INT NOT NULL DEFAULT 10 CHECK (max_guests > 0),
   images TEXT[] DEFAULT '{}',
   amenities TEXT[] DEFAULT '{}',
   cancellation_policy TEXT,

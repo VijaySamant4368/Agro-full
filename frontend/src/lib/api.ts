@@ -96,6 +96,7 @@ export function normalizeFarm(raw: any): Farm {
     subDistrict,
     category: raw.category || "Organic Farm",
     pricePerNight: Number(raw.nightly_rate ?? raw.pricePerNight ?? 4500),
+    maxGuests: Number(raw.max_guests ?? raw.maxGuests ?? 10),
     safety: (raw.safety || "safe") as any,
     host: hostName || "Rohit Bisht",
     hostId: raw.host_id ? String(raw.host_id) : raw.hostId,
@@ -315,6 +316,7 @@ export const api = {
       subdistrict?: string;
       category?: string;
       nightly_rate: number;
+      max_guests?: number;
       latitude?: number;
       longitude?: number;
       images?: string[];
@@ -331,6 +333,43 @@ export const api = {
         return { success: true, farm: normalizeFarm(res.data) };
       }
       return { success: false, error: res.error || "Failed to create farm" };
+    },
+
+    /** Seats left on a farm for a given stay window. */
+    async availability(
+      slug: string,
+      checkIn: string,
+      checkOut: string
+    ): Promise<{
+      success: boolean;
+      data?: { maxGuests: number; bookedGuests: number; availableSeats: number };
+      error?: string;
+    }> {
+      const query = new URLSearchParams({ checkIn, checkOut });
+      const res = await request<any>(`/farms/${slug}/availability?${query.toString()}`);
+      if (res.success && res.data) {
+        return {
+          success: true,
+          data: {
+            maxGuests: Number(res.data.maxGuests ?? 10),
+            bookedGuests: Number(res.data.bookedGuests ?? 0),
+            availableSeats: Number(res.data.availableSeats ?? 10),
+          },
+        };
+      }
+      return { success: false, error: res.error || "Failed to check availability" };
+    },
+
+    /** Farmer-only: update the seat capacity on their own listing. */
+    async updateCapacity(slug: string, max_guests: number): Promise<{ success: boolean; farm?: Farm; error?: string }> {
+      const res = await request<any>(`/farms/${slug}/capacity`, {
+        method: "PATCH",
+        body: JSON.stringify({ max_guests }),
+      });
+      if (res.success && res.data) {
+        return { success: true, farm: normalizeFarm(res.data) };
+      }
+      return { success: false, error: res.error || "Failed to update seat capacity" };
     },
   },
 
@@ -367,6 +406,7 @@ export const api = {
       farm_id: number;
       stay_start_date: string;
       stay_end_date: string;
+      total_guests: number;
     }): Promise<{
       success: boolean;
       data?: { order_id: string; amount: number; currency: string; key_id: string; quote: any };

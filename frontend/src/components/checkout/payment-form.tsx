@@ -62,6 +62,7 @@ export function PaymentForm({ total, farmId, checkIn, checkOut, guests }: Paymen
         farm_id: farmId || 1,
         stay_start_date: stayStartDate,
         stay_end_date: stayEndDate,
+        total_guests: totalGuests,
       });
 
       if (!orderRes.success || !orderRes.data) {

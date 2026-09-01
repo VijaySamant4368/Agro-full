@@ -27,6 +27,7 @@ export interface Farm {
   longitude?: number;
   uses_fallback_coords: boolean;
   nightly_rate: number;
+  max_guests: number;
   images: string[];
   amenities: string[];
   cancellation_policy?: string;

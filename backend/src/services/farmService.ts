@@ -1,5 +1,8 @@
 import { supabase, safeInsert } from "../config/supabase.js";
 import { Farm, StaticGeoReference } from "../types/index.js";
+import { getBookedGuestsForRange } from "./bookingService.js";
+
+const DEFAULT_MAX_GUESTS = 10;
 
 // Hardcoded default center coordinates, used when a farm has no GPS and the
 // static_geo_reference table has no match for its state/district/subdistrict.
@@ -66,6 +69,49 @@ export const getFarmBySlug = async (slug: string) => {
   return data;
 };
 
+/** How many seats are left on this farm for a given stay window. */
+export const getFarmAvailability = async (
+  farm_id: number,
+  stay_start_date: string,
+  stay_end_date: string
+) => {
+  const { data: farm, error } = await supabase.from("farms").select("max_guests").eq("id", farm_id).single();
+  if (error || !farm) throw new Error("Farmstay not found");
+
+  const maxGuests = farm.max_guests ?? DEFAULT_MAX_GUESTS;
+  const bookedGuests = await getBookedGuestsForRange(farm_id, stay_start_date, stay_end_date);
+
+  return { maxGuests, bookedGuests, availableSeats: Math.max(0, maxGuests - bookedGuests) };
+};
+
+/** Farmer-only: update the seat capacity on their own listing. */
+export const updateFarmCapacity = async (hostId: number, slug: string, max_guests: number) => {
+  if (!Number.isFinite(max_guests) || max_guests < 1) {
+    const err: any = new Error("max_guests must be a positive number.");
+    err.status = 400;
+    throw err;
+  }
+
+  const { data: farm, error: fErr } = await supabase.from("farms").select("id, host_id").eq("slug", slug).single();
+  if (fErr || !farm) throw new Error("Farmstay not found");
+
+  if (farm.host_id !== hostId) {
+    const err: any = new Error("You can only edit your own farmstay listings.");
+    err.status = 403;
+    throw err;
+  }
+
+  const { data: updated, error } = await supabase
+    .from("farms")
+    .update({ max_guests: Math.floor(max_guests), updated_at: new Date().toISOString() })
+    .eq("id", farm.id)
+    .select("*, users(first_name, last_name, email, phone_number)")
+    .single();
+
+  if (error) throw new Error(error.message);
+  return updated;
+};
+
 export const createFarmListing = async (
   hostId: number,
   data: {
@@ -76,6 +122,7 @@ export const createFarmListing = async (
     subdistrict?: string;
     category?: string;
     nightly_rate: number;
+    max_guests?: number;
     latitude?: number;
     longitude?: number;
     images?: string[];
@@ -112,6 +159,7 @@ export const createFarmListing = async (
     longitude: lng,
     uses_fallback_coords: usesFallback,
     nightly_rate: data.nightly_rate,
+    max_guests: data.max_guests && data.max_guests > 0 ? Math.floor(data.max_guests) : DEFAULT_MAX_GUESTS,
     images: data.images && data.images.length > 0 ? data.images : ["https://picsum.photos/seed/" + slug + "/900/600"],
     amenities: data.amenities || ["Organic Farm", "Safety Monitoring", "Escrow Protection"],
     cancellation_policy: data.cancellation_policy || "Full refund 48h prior. 100% refund on disaster alerts.",

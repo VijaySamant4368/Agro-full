@@ -5,14 +5,14 @@ import { createRazorpayOrder, verifyRazorpaySignature } from "../services/paymen
 import { ENV } from "../config/env.js";
 
 export const createOrder = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-  const { farm_id, stay_start_date, stay_end_date } = req.body;
+  const { farm_id, stay_start_date, stay_end_date, total_guests } = req.body;
 
   if (!farm_id || !stay_start_date || !stay_end_date) {
     res.status(400).json({ success: false, error: "farm_id, stay_start_date, and stay_end_date are required" });
     return;
   }
 
-  const quote = await computeBookingQuote(farm_id, stay_start_date, stay_end_date);
+  const quote = await computeBookingQuote(farm_id, stay_start_date, stay_end_date, total_guests || 1);
 
   const order = await createRazorpayOrder({
     amountInRupees: quote.total_charged,

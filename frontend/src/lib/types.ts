@@ -10,6 +10,7 @@ export interface Farm {
   subDistrict: string;
   category: string;
   pricePerNight: number;
+  maxGuests: number;
   safety: SafetyStatus;
   host: string;
   hostId?: string | number;

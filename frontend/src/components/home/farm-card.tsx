@@ -28,7 +28,7 @@ export function FarmCard({ farm }: { farm: Farm }) {
           </h3>
           <p className="shrink-0 text-sm font-bold text-brand-700">
             {formatINR(farm.pricePerNight)}
-            <span className="font-medium text-ink-muted">/night</span>
+            <span className="font-medium text-ink-muted">/night/person</span>
           </p>
         </div>
 

@@ -57,6 +57,7 @@ export default function NewFarmPage() {
     subDistrictsOf(STATES[0], districtsOf(STATES[0])[0] || "")[0] || ""
   );
   const [nightlyRate, setNightlyRate] = useState("4200");
+  const [maxGuests, setMaxGuests] = useState("10");
   const [summary, setSummary] = useState("");
   const [emergencyContact, setEmergencyContact] = useState("");
   const [selectedAmenities, setSelectedAmenities] = useState<string[]>([
@@ -109,6 +110,8 @@ export default function NewFarmPage() {
       err.summary = "Provide a summary of at least 20 characters.";
     if (!nightlyRate || Number(nightlyRate) <= 0)
       err.nightlyRate = "Valid nightly price is required.";
+    if (!maxGuests || Number(maxGuests) <= 0)
+      err.maxGuests = "Valid seat capacity is required.";
     if (!emergencyContact.trim())
       err.emergencyContact = "Local emergency contact or caretaker info is required.";
     setErrors(err);
@@ -131,6 +134,7 @@ export default function NewFarmPage() {
         subdistrict: subDistrict,
         category,
         nightly_rate: Number(nightlyRate),
+        max_guests: Number(maxGuests),
         latitude: lat ? Number(lat) : undefined,
         longitude: lng ? Number(lng) : undefined,
         amenities: selectedAmenities,
@@ -167,7 +171,8 @@ export default function NewFarmPage() {
           <div className="mt-6 rounded-lg border border-line bg-canvas/60 p-4 text-left text-xs text-ink-muted space-y-1">
             <p><strong>Location:</strong> {subDistrict}, {district}, {state}</p>
             <p><strong>Coordinates:</strong> {lat}° N, {lng}° E {usesFallback && "(Auto-resolved from Static Geo Reference)"}</p>
-            <p><strong>Nightly Rate:</strong> {formatINR(Number(nightlyRate))}</p>
+            <p><strong>Rate:</strong> {formatINR(Number(nightlyRate))} / night / person</p>
+            <p><strong>Seat Capacity:</strong> {maxGuests} guests max</p>
             <p><strong>Initial Safety Status:</strong> <span className="text-safe font-semibold">Safe (Matrix Verified)</span></p>
           </div>
 
@@ -233,7 +238,7 @@ export default function NewFarmPage() {
                   )}
                 </Field>
 
-                <Field label="Nightly Price (INR)">
+                <Field label="Price per Night, per Person (INR)">
                   {(id) => (
                     <Input
                       id={id}
@@ -247,6 +252,23 @@ export default function NewFarmPage() {
                 </Field>
               </div>
               {errors.nightlyRate && <p className="text-xs text-danger">{errors.nightlyRate}</p>}
+
+              <Field
+                label="Max Seats Available"
+                hint="Total guests you can host at once. Guests booking overlapping dates can't exceed this."
+              >
+                {(id) => (
+                  <Input
+                    id={id}
+                    type="number"
+                    min="1"
+                    step="1"
+                    value={maxGuests}
+                    onChange={(e) => setMaxGuests(e.target.value)}
+                  />
+                )}
+              </Field>
+              {errors.maxGuests && <p className="text-xs text-danger">{errors.maxGuests}</p>}
 
               <Field label="Summary & Farm Experience">
                 {(id) => (
@@ -422,7 +444,7 @@ export default function NewFarmPage() {
                     {category}
                   </span>
                   <span className="text-sm font-extrabold text-ink">
-                    {formatINR(Number(nightlyRate) || 0)} <span className="text-xs font-normal text-ink-muted">/ night</span>
+                    {formatINR(Number(nightlyRate) || 0)} <span className="text-xs font-normal text-ink-muted">/ night / person</span>
                   </span>
                 </div>
 
@@ -437,6 +459,10 @@ export default function NewFarmPage() {
 
                 <p className="mt-3 text-xs text-ink-muted line-clamp-3">
                   {summary || "Your farmstay description and experience highlights will appear here..."}
+                </p>
+
+                <p className="mt-2 text-xs font-medium text-ink-muted">
+                  Seats up to {Number(maxGuests) || 0} guests
                 </p>
 
                 <div className="mt-4 flex flex-wrap gap-1.5 border-t border-line pt-3">

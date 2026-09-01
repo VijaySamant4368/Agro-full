@@ -17,6 +17,7 @@ import {
   ChevronRight,
   TrendingUp,
   Inbox,
+  Pencil,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button, ButtonLink } from "@/components/ui/button";
@@ -34,6 +35,37 @@ export default function HostDashboardPage() {
   const [hostBookings, setHostBookings] = useState<Booking[]>([]);
   const [escrowList, setEscrowList] = useState<PaymentEscrow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [editingSlug, setEditingSlug] = useState<string | null>(null);
+  const [seatsDraft, setSeatsDraft] = useState("");
+  const [savingSeats, setSavingSeats] = useState(false);
+
+  function startEditSeats(farm: Farm) {
+    setEditingSlug(farm.slug);
+    setSeatsDraft(String(farm.maxGuests ?? 10));
+  }
+
+  async function saveSeats(slug: string) {
+    const n = Number(seatsDraft);
+    if (!Number.isFinite(n) || n < 1) {
+      toast.error("Enter a valid number of seats (1 or more).", "Invalid Value");
+      return;
+    }
+    setSavingSeats(true);
+    try {
+      const res = await api.farms.updateCapacity(slug, Math.floor(n));
+      if (!res.success) {
+        toast.error(res.error || "Failed to update seat capacity", "Error");
+        return;
+      }
+      setHostFarms((prev) => prev.map((f) => (f.slug === slug ? { ...f, maxGuests: Math.floor(n) } : f)));
+      toast.success("Seat capacity updated.", "Saved");
+      setEditingSlug(null);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to update seat capacity", "Error");
+    } finally {
+      setSavingSeats(false);
+    }
+  }
 
   useEffect(() => {
     async function loadData() {
@@ -232,8 +264,48 @@ export default function HostDashboardPage() {
                         {farm.summary}
                       </p>
                       <div className="mt-4 flex items-center justify-between border-t border-line pt-3">
-                        <span className="text-xs text-ink-subtle">Nightly Rate</span>
+                        <span className="text-xs text-ink-subtle">Rate / Night / Person</span>
                         <span className="text-base font-extrabold text-brand-700">{formatINR(farm.pricePerNight)}</span>
+                      </div>
+
+                      <div className="mt-2 flex items-center justify-between">
+                        <span className="text-xs text-ink-subtle">Max Seats</span>
+                        {editingSlug === farm.slug ? (
+                          <div className="flex items-center gap-1.5">
+                            <input
+                              type="number"
+                              min={1}
+                              autoFocus
+                              value={seatsDraft}
+                              onChange={(e) => setSeatsDraft(e.target.value)}
+                              className="w-16 rounded-md border border-line px-2 py-1 text-right text-xs"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => saveSeats(farm.slug)}
+                              disabled={savingSeats}
+                              className="text-xs font-bold text-brand-700 hover:underline disabled:opacity-50"
+                            >
+                              {savingSeats ? "Saving…" : "Save"}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setEditingSlug(null)}
+                              className="text-xs text-ink-muted hover:underline"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => startEditSeats(farm)}
+                            className="flex items-center gap-1 text-xs font-semibold text-ink hover:text-brand-700"
+                          >
+                            {farm.maxGuests ?? 10} guests
+                            <Pencil size={12} aria-hidden />
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>

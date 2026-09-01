@@ -29,7 +29,7 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Sea
   const guests = Number(one(sp.guests)) || 2;
   const nights = nightsBetween(checkIn, checkOut) || 3;
 
-  const q = quote(farm.pricePerNight, nights);
+  const q = quote(farm.pricePerNight, nights, guests);
   const dateRange =
     checkIn && checkOut ? `${dayMonth(checkIn)} – ${dayMonth(checkOut)}` : `${nights} nights`;
 

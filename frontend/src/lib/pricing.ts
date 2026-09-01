@@ -10,8 +10,9 @@ export interface Quote {
   total: number;
 }
 
-export function quote(pricePerNight: number, nights: number): Quote {
-  const stay = pricePerNight * nights;
+/** Priced per night, per person. */
+export function quote(pricePerNight: number, nights: number, guests: number = 1): Quote {
+  const stay = pricePerNight * nights * Math.max(1, guests);
   const serviceFee = SERVICE_FEE_PER_NIGHT * nights;
   const taxes = Math.round(stay * TAX_RATE);
   return { nights, stay, serviceFee, taxes, total: stay + serviceFee + taxes };

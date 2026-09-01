@@ -4,26 +4,69 @@ import { sendHostBookingEmail, sendAdminPaymentEmail } from "./emailService.js";
 
 const PLATFORM_FEE_RATE = 0.05;
 const DEFAULT_NIGHTLY_RATE = 4500;
+const DEFAULT_MAX_GUESTS = 10;
 
-/** Server-computed quote — never trust a client-supplied amount for what gets charged. */
-export const computeBookingQuote = async (
+/**
+ * Total guests already booked on this farm for any date range that overlaps
+ * [stay_start_date, stay_end_date). Cancelled bookings don't hold a seat.
+ */
+export const getBookedGuestsForRange = async (
   farm_id: number,
   stay_start_date: string,
   stay_end_date: string
+): Promise<number> => {
+  const { data, error } = await supabase
+    .from("bookings")
+    .select("total_guests")
+    .eq("farm_id", farm_id)
+    .neq("current_status", "Cancelled")
+    .lt("stay_start_date", stay_end_date)
+    .gt("stay_end_date", stay_start_date);
+
+  if (error) throw new Error(error.message);
+  return (data || []).reduce((sum: number, b: any) => sum + (b.total_guests || 0), 0);
+};
+
+/**
+ * Server-computed quote — never trust a client-supplied amount for what gets charged.
+ * Also the single seat-capacity gate: throws (409) if the requested headcount
+ * doesn't fit what's left for these dates. Every booking path (direct create,
+ * Razorpay order, Razorpay verify) routes through this, so they can't disagree.
+ */
+export const computeBookingQuote = async (
+  farm_id: number,
+  stay_start_date: string,
+  stay_end_date: string,
+  total_guests: number = 1
 ) => {
   const start = new Date(stay_start_date);
   const end = new Date(stay_end_date);
   const nights = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
+  const guests = Math.max(1, Math.floor(total_guests) || 1);
 
-  let nightlyRate = DEFAULT_NIGHTLY_RATE;
-  const { data: farmRate } = await supabase.from("farms").select("nightly_rate").eq("id", farm_id).single();
-  if (farmRate) nightlyRate = farmRate.nightly_rate;
+  const { data: farm } = await supabase.from("farms").select("nightly_rate, max_guests").eq("id", farm_id).single();
+  const nightlyRate = farm?.nightly_rate ?? DEFAULT_NIGHTLY_RATE;
+  const maxGuests = farm?.max_guests ?? DEFAULT_MAX_GUESTS;
 
-  const stay_amount = nightlyRate * nights;
+  const bookedGuests = await getBookedGuestsForRange(farm_id, stay_start_date, stay_end_date);
+  const availableSeats = Math.max(0, maxGuests - bookedGuests);
+
+  if (guests > availableSeats) {
+    const err: any = new Error(
+      availableSeats > 0
+        ? `Only ${availableSeats} seat${availableSeats === 1 ? "" : "s"} available for these dates.`
+        : "No seats available for these dates."
+    );
+    err.status = 409;
+    throw err;
+  }
+
+  // Priced per night, per person.
+  const stay_amount = nightlyRate * nights * guests;
   const platform_fee = Math.round(stay_amount * PLATFORM_FEE_RATE);
   const total_charged = stay_amount + platform_fee;
 
-  return { nights, nightlyRate, stay_amount, platform_fee, total_charged };
+  return { nights, guests, nightlyRate, maxGuests, availableSeats, stay_amount, platform_fee, total_charged };
 };
 
 // Notifies the host + admin that a booking/payment landed. Best-effort: must never fail the booking itself.
@@ -102,7 +145,8 @@ export const createBookingWithEscrow = async (data: {
   const { stay_amount, platform_fee, total_charged } = await computeBookingQuote(
     data.farm_id,
     data.stay_start_date,
-    data.stay_end_date
+    data.stay_end_date,
+    data.total_guests
   );
 
   const gateway_ref = data.gateway_ref || `rzp_live_${Math.floor(Math.random() * 900000000 + 100000000)}`;
