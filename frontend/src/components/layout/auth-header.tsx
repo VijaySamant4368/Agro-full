@@ -4,13 +4,14 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { Menu, ShieldCheck, X } from "lucide-react";
+import { MATRIX_FEATURE_ENABLED } from "@/lib/feature-flags";
 import { cn } from "@/lib/utils";
 
 const NAV = [
   { href: "/", label: "Home" },
   { href: "/report", label: "Report Landslide" },
   { href: "/live", label: "Live Landslides" },
-  { href: "/matrix", label: "Safety Matrix" },
+  ...(MATRIX_FEATURE_ENABLED ? [{ href: "/matrix", label: "Safety Matrix" }] : []),
 ];
 
 export function AuthHeader() {

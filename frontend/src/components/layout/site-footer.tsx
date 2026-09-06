@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Globe, Mail, ShieldCheck, PhoneCall } from "lucide-react";
+import { MATRIX_FEATURE_ENABLED } from "@/lib/feature-flags";
 
 export function SiteFooter() {
   return (
@@ -28,7 +29,9 @@ export function SiteFooter() {
             <ul className="space-y-2 text-xs text-ink-muted">
               <li><Link href="/" className="hover:text-brand-700">Search Farmstays</Link></li>
               <li><Link href="/safety" className="hover:text-brand-700">Safety Check</Link></li>
-              <li><Link href="/matrix" className="hover:text-brand-700">12-Month Safety Matrix</Link></li>
+              {MATRIX_FEATURE_ENABLED ? (
+                <li><Link href="/matrix" className="hover:text-brand-700">12-Month Safety Matrix</Link></li>
+              ) : null}
               <li><Link href="/bookings" className="hover:text-brand-700">My Bookings</Link></li>
               <li><Link href="/escrow" className="hover:text-brand-700">Escrow Refund Policy</Link></li>
             </ul>
@@ -64,7 +67,9 @@ export function SiteFooter() {
           <div className="flex gap-4">
             <Link href="/safety" className="hover:underline">Terms of Escrow</Link>
             <Link href="/settings" className="hover:underline">Privacy & Location Data</Link>
-            <Link href="/matrix" className="hover:underline">Himalayan Matrix Methodology</Link>
+            {MATRIX_FEATURE_ENABLED ? (
+              <Link href="/matrix" className="hover:underline">Himalayan Matrix Methodology</Link>
+            ) : null}
           </div>
         </div>
       </div>

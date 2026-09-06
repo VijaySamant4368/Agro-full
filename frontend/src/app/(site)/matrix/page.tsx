@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { notFound } from "next/navigation";
+import { MATRIX_FEATURE_ENABLED } from "@/lib/feature-flags";
 import {
   AlertTriangle,
   Calendar,
@@ -41,6 +43,8 @@ const RATING_COLORS: Record<string, string> = {
 };
 
 export default function SafetyMatrixExplorerPage() {
+  if (!MATRIX_FEATURE_ENABLED) notFound();
+
   const [selectedDistrict, setSelectedDistrict] = useState("Chamoli");
   const [selectedMonth, setSelectedMonth] = useState(8); // August
   const [districtRecords, setDistrictRecords] = useState<MonthlySafetyRecord[]>([]);

@@ -16,6 +16,7 @@ import {
   X,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
+import { MATRIX_FEATURE_ENABLED } from "@/lib/feature-flags";
 import { cn } from "@/lib/utils";
 
 type NavItem = {
@@ -29,7 +30,7 @@ const BASE_NAV: NavItem[] = [
   { href: "/", label: "Home" },
   { href: "/report", label: "Report Landslide" },
   { href: "/live", label: "Live Landslides" },
-  { href: "/matrix", label: "Safety Matrix" },
+  ...(MATRIX_FEATURE_ENABLED ? [{ href: "/matrix", label: "Safety Matrix" }] : []),
 ];
 
 export function SiteHeader() {
